@@ -22,23 +22,17 @@ This configuration defines a single Jenkins service with persistent storage, net
 
 ## Version Declaration
 
-```yaml
-version: '3.8'
-```
-
-**What it does**: Specifies the Docker Compose file format version.
-
-**Purpose**: Different versions support different features and syntax. Version 3.8 is a stable version that supports:
-
-- Named volumes
-- Networks
-- Build configurations
-- Environment variable substitution
-- Health checks
-- Deploy configurations
-
 > [!NOTE]
-> Docker Compose v2 (used with Docker Desktop) doesn't strictly require the `version` field, but it's good practice to include it for compatibility.
+> The `version` field has been removed as it's obsolete in Docker Compose v2 (the current standard). Docker Compose v2 automatically detects the file format and supports all modern features including:
+>
+> - Named volumes
+> - Networks
+> - Build configurations
+> - Environment variable substitution
+> - Health checks
+> - Deploy configurations
+> - Resource limits
+> - Logging configuration
 
 ## Services Configuration
 
