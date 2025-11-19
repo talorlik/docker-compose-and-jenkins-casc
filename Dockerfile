@@ -3,10 +3,10 @@ FROM jenkins/jenkins:latest-jdk21 AS base
 
 USER root
 
-# Install Docker CLI and update all packages to fix vulnerabilities
+# Install Docker CLI, curl (for healthcheck), and update all packages to fix vulnerabilities
 RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends docker.io && \
+    apt-get install -y --no-install-recommends docker.io curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

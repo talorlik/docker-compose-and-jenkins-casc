@@ -1,10 +1,11 @@
 # docker-compose-and-jenkins-casc
 
-This repository demonstrates how to create a Jenkins server using Docker Compose and Jenkins Configuration as Code (JCasC). The setup includes Blue Ocean, Docker Pipeline, and Configuration as Code plugins, with support for both ARM and AMD architectures.
+> [!INFO]
+> This repository demonstrates how to create a Jenkins server using Docker Compose and Jenkins Configuration as Code (JCasC). The setup includes plugins, and supports both ARM and AMD architectures.
 
 ## Features
 
-- ✅ Jenkins LTS running in Docker
+- ✅ Jenkins running in Docker
 - ✅ Configuration as Code (JCasC) for automated setup
 - ✅ Pre-installed plugins:
   - Blue Ocean
@@ -26,7 +27,7 @@ This repository demonstrates how to create a Jenkins server using Docker Compose
 
 ### 1. Set Admin Password (Optional)
 
-By default, the admin user password is `admin123`. To change it, set the `JENKINS_ADMIN_PASSWORD` environment variable in `docker-compose.yml` or create a `.env` file:
+By default, the admin user password is `admin123`. To change it, set the `JENKINS_ADMIN_PASSWORD` environment variable in `docker-compose.yaml` or create a `.env` file:
 
 ```bash
 echo "JENKINS_ADMIN_PASSWORD=your-secure-password" > .env
@@ -43,15 +44,15 @@ docker-compose up -d --build
 For multi-architecture support (ARM64 and AMD64):
 
 ```bash
-# Create a buildx builder (if not already created)
-docker buildx create --name multiarch --use
-
-# Build for multiple platforms
-docker buildx build --platform linux/amd64,linux/arm64 -t jenkins-casc:latest --load .
+# Run
+./build-multiarch.sh
 
 # Start with docker-compose
 docker-compose up -d
 ```
+
+> [!NOTE]
+> For detailed information about the Docker Compose configuration, see [DOCKER_COMPOSE_CONFIG.md](DOCKER_COMPOSE_CONFIG.md).
 
 ### 3. Access Jenkins
 
@@ -72,10 +73,12 @@ docker-compose up -d
 
 The Jenkins configuration is defined in `jenkins.yaml`. This file includes:
 
-- **Security Realm**: Local user authentication with admin user
-- **Authorization**: Logged-in users can do anything
+- **Security Realm**: Local user authentication with admin and regular users
+- **Authorization**: Role-based access control with fine-grained permissions
 - **Docker Cloud**: Configured for Docker-in-Docker support
 - **System Settings**: Admin email, URL, and other system configurations
+
+For a detailed explanation of each configuration option, see [JENKINS_CONFIG.md](JENKINS_CONFIG.md).
 
 ### Customizing Configuration
 
@@ -91,33 +94,6 @@ After making changes, restart Jenkins:
 
 ```bash
 docker-compose restart jenkins
-```
-
-## Architecture Support
-
-This setup supports both ARM64 (Apple Silicon, ARM-based servers) and AMD64 (Intel/AMD processors) architectures.
-
-### Building Multi-Arch Images
-
-To build and push multi-arch images:
-
-```bash
-# Build and push to registry
-docker buildx build --platform linux/amd64,linux/arm64 \
-  -t your-registry/jenkins-casc:latest \
-  --push .
-```
-
-### Running on Different Architectures
-
-The Docker Compose setup will automatically use the correct image for your platform. For explicit platform selection:
-
-```bash
-# For ARM64 (Apple Silicon)
-docker-compose up -d --build --platform linux/arm64
-
-# For AMD64 (Intel/AMD)
-docker-compose up -d --build --platform linux/amd64
 ```
 
 ## Docker-in-Docker
@@ -204,8 +180,8 @@ You don't need it if:
 ### Jenkins won't start
 
 1. Check logs: `docker-compose logs jenkins`
-2. Verify Docker socket permissions: `ls -la /var/run/docker.sock`
-3. Ensure ports 8080 and 50000 are not in use
+2. Verify Docker socket permissions: The Jenkins container needs read/write access. The socket should be owned by `root:docker` with permissions `srw-rw----` (typically mode `0660`). Check with: `ls -l /var/run/docker.sock`
+3. Ensure ports `8080` and `50000` are not in use
 
 ### Configuration not applied
 
@@ -233,4 +209,4 @@ docker-compose down -v
 
 ## License
 
-See LICENSE file for details.
+See [LICENSE](LICENSE) file for details.

@@ -7,9 +7,21 @@ set -e
 
 echo "Building Jenkins image for multiple architectures..."
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Error: Docker is not installed. Please install Docker."
+    exit 1
+fi
+
+# Check if Docker service is running
+if ! docker info &> /dev/null; then
+    echo "Error: Docker service is not running. Please start Docker."
+    exit 1
+fi
+
 # Check if buildx is available
 if ! docker buildx version &> /dev/null; then
-    echo "Error: Docker Buildx is not available. Please install Docker Desktop or update Docker Engine."
+    echo "Error: Docker Buildx is not available. Please install the BuildX plugin."
     exit 1
 fi
 
@@ -29,7 +41,7 @@ docker buildx inspect --bootstrap
 echo "Building for linux/amd64 and linux/arm64..."
 docker buildx build \
     --platform linux/amd64,linux/arm64 \
-    -t jenkins-casc:latest \
+    -t jenkins/jenkins:latest-jdk21 \
     --load \
     .
 

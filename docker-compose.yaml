@@ -18,7 +18,27 @@ services:
       - JENKINS_OPTS=--httpPort=8080
       - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs
       - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin123}
+      - JENKINS_USER_PASSWORD=${JENKINS_USER_PASSWORD:-user123}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - jenkins-network
 

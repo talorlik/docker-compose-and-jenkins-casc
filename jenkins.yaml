@@ -16,10 +16,33 @@ jenkins:
             - "jenkins.security.seed.UserSeedProperty"
             - "hudson.search.UserSearchProperty"
             - "hudson.model.TimeZoneProperty"
+        - id: "user"
+          name: "Jenkins User"
+          password: "${JENKINS_USER_PASSWORD:-user123}"
+          properties:
+            - "hudson.model.MyViewsProperty"
+            - "hudson.security.HudsonPrivateSecurityRealm$Details"
+            - "jenkins.security.ApiTokenProperty"
+            - "hudson.model.PaneStatusProperties"
+            - "jenkins.security.seed.UserSeedProperty"
+            - "hudson.search.UserSearchProperty"
+            - "hudson.model.TimeZoneProperty"
 
   authorizationStrategy:
-    loggedInUsersCanDoAnything:
-      allowAnonymousRead: false
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Read:authenticated"
+        - "Job/Build:authenticated"
+        - "Job/Cancel:authenticated"
+        - "Job/Read:authenticated"
+        - "Job/Workspace:authenticated"
+        - "View/Read:authenticated"
+        - "View/Read:user"
+        - "Job/Read:user"
+        - "Job/Build:user"
+        - "Job/Cancel:user"
+        - "Job/Workspace:user"
 
   crumbIssuer:
     standard:
@@ -59,12 +82,16 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             instanceCap: 5
             pullStrategy: PULL_ALWAYS
+            memory: 2
+            memoryUnit: GB
+            cpuPeriod: 100000
+            cpuQuota: 100000
             volumes:
               - "/var/run/docker.sock:/var/run/docker.sock"
 
 unclassified:
   location:
-    adminAddress: "admin@example.com"
+    adminAddress: "${JENKINS_ADMIN_EMAIL:-admin@example.com}"
     url: "http://localhost:8080/"
 
   globalLibraries:
