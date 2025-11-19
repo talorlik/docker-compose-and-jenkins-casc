@@ -1,0 +1,90 @@
+jenkins:
+  systemMessage: "Jenkins configured automatically by Jenkins Configuration as Code"
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Jenkins Admin"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin123}"
+          properties:
+            - "hudson.model.MyViewsProperty"
+            - "hudson.security.HudsonPrivateSecurityRealm$Details"
+            - "jenkins.security.ApiTokenProperty"
+            - "hudson.model.PaneStatusProperties"
+            - "jenkins.security.seed.UserSeedProperty"
+            - "hudson.search.UserSearchProperty"
+            - "hudson.model.TimeZoneProperty"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+  disableRememberMe: false
+
+  numExecutors: 2
+
+  mode: NORMAL
+
+  nodes:
+    - permanent:
+        name: "master"
+        numExecutors: 2
+        description: "Built-in Jenkins node"
+        remoteFS: "/var/jenkins_home"
+        labelString: "master"
+        launcher:
+          jnlp:
+            workDirSettings:
+              disabled: false
+              failIfWorkDirIsMissing: false
+              internalDir: "remoting"
+              workDirPath: "/var/jenkins_home"
+
+  clouds:
+    - docker:
+        name: "docker"
+        dockerHost:
+          uri: "unix:///var/run/docker.sock"
+        containerCap: 10
+        templates:
+          - labelString: "docker"
+            name: "docker-agent"
+            image: "jenkins/inbound-agent:latest"
+            remoteFs: "/home/jenkins/agent"
+            instanceCap: 5
+            pullStrategy: PULL_ALWAYS
+            volumes:
+              - "/var/run/docker.sock:/var/run/docker.sock"
+
+unclassified:
+  location:
+    adminAddress: "admin@example.com"
+    url: "http://localhost:8080/"
+
+  globalLibraries:
+    libraries:
+      - name: "shared-library"
+        defaultVersion: "master"
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                id: "shared-library"
+                remote: "https://github.com/jenkinsci/workflow-cps-global-lib-plugin.git"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+  docker:
+    installations:
+      - name: "Docker"
+        home: "/usr/bin/docker"

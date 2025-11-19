@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenkins
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./jenkins.yaml:/var/jenkins_home/casc_configs/jenkins.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin123}
+    restart: unless-stopped
+    networks:
+      - jenkins-network
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  jenkins-network:
+    driver: bridge

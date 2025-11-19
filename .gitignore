@@ -1,0 +1,4 @@
+.env
+*.log
+jenkins_home/
+.cursor/
