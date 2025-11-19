@@ -195,6 +195,17 @@ You don't need it if:
 2. Create a new builder: `docker buildx create --name multiarch --use`
 3. Inspect builder: `docker buildx inspect --bootstrap`
 
+## Tests
+
+This repository includes comprehensive unit tests for the Jenkins configuration, covering:
+
+- User authentication (admin and regular users)
+- Admin permissions (Overall/Administer)
+- User permissions (Job/Read, Job/Build, Job/Cancel, Job/Workspace, View/Read)
+- Container health checks
+
+For detailed information about running and maintaining the tests, see [TEST_README.md](TEST_README.md).
+
 ## Stopping Jenkins
 
 ```bash
