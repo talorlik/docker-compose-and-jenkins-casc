@@ -13,6 +13,7 @@
   - Configuration as Code
   - Docker Plugin
   - Workflow Aggregator
+  - Matrix Authorization Strategy
 - ✅ Multi-architecture support (ARM64 and AMD64)
 - ✅ Pre-configured admin user
 - ✅ Docker-in-Docker support
