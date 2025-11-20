@@ -30,7 +30,7 @@ jenkins:
 
   authorizationStrategy:
     globalMatrix:
-      permissions:
+      entries:
         - "Overall/Administer:admin"
         - "Overall/Read:authenticated"
         - "Job/Build:authenticated"
@@ -69,25 +69,28 @@ jenkins:
               internalDir: "remoting"
               workDirPath: "/var/jenkins_home"
 
-  clouds:
-    - docker:
-        name: "docker"
-        dockerHost:
-          uri: "unix:///var/run/docker.sock"
-        containerCap: 10
-        templates:
-          - labelString: "docker"
-            name: "docker-agent"
-            image: "jenkins/inbound-agent:latest"
-            remoteFs: "/home/jenkins/agent"
-            instanceCap: 5
-            pullStrategy: PULL_ALWAYS
-            memory: 2
-            memoryUnit: GB
-            cpuPeriod: 100000
-            cpuQuota: 100000
-            volumes:
-              - "/var/run/docker.sock:/var/run/docker.sock"
+    clouds:
+      - docker:
+          name: "docker"
+          dockerApi:
+            dockerHost:
+              uri: "unix:///var/run/docker.sock"
+          containerCapStr: "10"
+          templates:
+            - labelString: "docker"
+              name: "docker-agent"
+              remoteFs: "/home/jenkins/agent"
+              instanceCapStr: "5"
+              mode: NORMAL
+              pullStrategy: PULL_ALWAYS
+              dockerTemplateBase:
+                image: "jenkins/inbound-agent:latest"
+                # 2 GB in MB for memoryLimit
+                memoryLimit: 2048
+                cpuPeriod: 100000
+                cpuQuota: 100000
+                volumes:
+                  - "/var/run/docker.sock:/var/run/docker.sock"
 
 unclassified:
   location:

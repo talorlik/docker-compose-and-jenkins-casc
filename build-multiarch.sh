@@ -45,4 +45,4 @@ docker buildx build \
     --load \
     .
 
-echo "Build complete! You can now start Jenkins with: docker-compose up -d"
+echo "Build complete! You can now start Jenkins with: docker compose up -d"

@@ -82,7 +82,7 @@ securityRealm:
 ```yaml
 authorizationStrategy:
   globalMatrix:
-    permissions:
+    entries:
       - "Overall/Administer:admin"
       - "Overall/Read:authenticated"
       - "Job/Build:authenticated"
@@ -228,24 +228,33 @@ nodes:
 
 ## Docker Cloud Configuration
 
-### `jenkins.clouds`
+### `jenkins.nodes.clouds`
 
 ```yaml
-clouds:
-  - docker:
-      name: "docker"
-      dockerHost:
-        uri: "unix:///var/run/docker.sock"
-      containerCap: 10
-      templates:
-        - labelString: "docker"
-          name: "docker-agent"
-          image: "jenkins/inbound-agent:latest"
-          remoteFs: "/home/jenkins/agent"
-          instanceCap: 5
-          pullStrategy: PULL_ALWAYS
-          volumes:
-            - "/var/run/docker.sock:/var/run/docker.sock"
+nodes:
+  - permanent:
+      # ... node configuration ...
+    clouds:
+      - docker:
+          name: "docker"
+          dockerApi:
+            dockerHost:
+              uri: "unix:///var/run/docker.sock"
+          containerCapStr: "10"
+          templates:
+            - labelString: "docker"
+              name: "docker-agent"
+              remoteFs: "/home/jenkins/agent"
+              instanceCapStr: "5"
+              mode: NORMAL
+              pullStrategy: PULL_ALWAYS
+              dockerTemplateBase:
+                image: "jenkins/inbound-agent:latest"
+                memoryLimit: 2048
+                cpuPeriod: 100000
+                cpuQuota: 100000
+                volumes:
+                  - "/var/run/docker.sock:/var/run/docker.sock"
 ```
 
 **What it does**: Configures Docker Cloud, which allows Jenkins to dynamically provision Docker containers as build agents.
@@ -253,26 +262,27 @@ clouds:
 **Components**:
 
 - **`name: "docker"`**: Identifier for this cloud configuration.
-- **`dockerHost.uri`**: Docker daemon connection URI.
+- **`dockerApi.dockerHost.uri`**: Docker daemon connection URI.
   - **`unix:///var/run/docker.sock`**: Connects to Docker daemon via Unix socket (standard on Linux).
-- **`containerCap: 10`**: Maximum total number of containers that can be created across all templates.
+- **`containerCapStr: "10"`**: Maximum total number of containers that can be created across all templates (as a string).
 - **`templates`**: Defines agent container templates.
   - **`labelString: "docker"`**: Label that pipelines can use to request this agent type.
   - **`name: "docker-agent"`**: Template name.
-  - **`image: "jenkins/inbound-agent:latest"`**: Docker image to use for agents.
   - **`remoteFs: "/home/jenkins/agent"`**: Root filesystem path inside the container.
-          - **`instanceCap: 5`**: Maximum number of containers of this template that can run simultaneously.
-          - **`pullStrategy: PULL_ALWAYS`**: Always pull the latest image (options: `PULL_ALWAYS`, `PULL_NEVER`, `PULL_LATEST`).
-          - **`memory: 2`**: Memory limit per agent container (2 gigabytes).
-          - **`memoryUnit: GB`**: Memory unit (gigabytes).
-          - **`cpuPeriod: 100000`**: CPU period in microseconds (used with cpuQuota for CPU limits).
-          - **`cpuQuota: 100000`**: CPU quota in microseconds (100000/100000 = 1.0 CPU core per agent).
-          - **`volumes`**: Volumes to mount in agent containers.
-            - Mounts Docker socket so agents can build Docker images (Docker-in-Docker).
+  - **`instanceCapStr: "5"`**: Maximum number of containers of this template that can run simultaneously (as a string).
+  - **`mode: NORMAL`**: Agent mode (NORMAL allows running builds).
+  - **`pullStrategy: PULL_ALWAYS`**: Always pull the latest image (options: `PULL_ALWAYS`, `PULL_NEVER`, `PULL_LATEST`).
+  - **`dockerTemplateBase`**: Base configuration for Docker agent containers.
+    - **`image: "jenkins/inbound-agent:latest"`**: Docker image to use for agents.
+    - **`memoryLimit: 2048`**: Memory limit per agent container in megabytes (2048 MB = 2 GB).
+    - **`cpuPeriod: 100000`**: CPU period in microseconds (used with cpuQuota for CPU limits).
+    - **`cpuQuota: 100000`**: CPU quota in microseconds (100000/100000 = 1.0 CPU core per agent).
+    - **`volumes`**: Volumes to mount in agent containers.
+      - Mounts Docker socket so agents can build Docker images (Docker-in-Docker).
 
 **Resource Limits Explained**:
 
-- **Memory**: Each agent container is limited to 2GB of RAM. This prevents agents from consuming excessive memory.
+- **Memory**: Each agent container is limited to 2048 MB (2 GB) of RAM. This prevents agents from consuming excessive memory.
 - **CPU**: Each agent container is limited to 1 CPU core (cpuQuota/cpuPeriod = 100000/100000 = 1.0).
   - **`cpuPeriod`**: The period over which CPU usage is measured (100000 microseconds = 0.1 seconds).
   - **`cpuQuota`**: The maximum CPU time allowed in one period (100000 microseconds = 1 full CPU core).

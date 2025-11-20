@@ -39,18 +39,26 @@ echo "JENKINS_ADMIN_PASSWORD=your-secure-password" > .env
 For single architecture (your current platform):
 
 ```bash
-docker-compose up -d --build
+docker compose up
 ```
+
+> **NOTE:**
+>
+> - Use the `-d` flag if you want to run as a daemon with the output not showing in the terminal.
+> - Use the `--build` flag if you want to force a rebuild of the image.
 
 For multi-architecture support (ARM64 and AMD64):
 
 ```bash
-# Run
+# Build for multiple architectures
 ./build-multiarch.sh
 
-# Start with docker-compose
-docker-compose up -d
+# Start with docker compose
+docker compose up -d
 ```
+
+> [!INFO]
+> The `build-multiarch.sh` script builds the Jenkins image for both `linux/amd64` and `linux/arm64` platforms. The built image is tagged as `jenkins/jenkins:latest-jdk21`. The `--load` flag loads the image into the local Docker daemon (note: only one platform can be loaded at a time).
 
 > [!NOTE]
 > For detailed information about the Docker Compose configuration, see [DOCKER_COMPOSE_CONFIG.md](DOCKER_COMPOSE_CONFIG.md).
@@ -94,7 +102,7 @@ Edit `jenkins.yaml` to customize:
 After making changes, restart Jenkins:
 
 ```bash
-docker-compose restart jenkins
+docker compose restart jenkins
 ```
 
 ## Docker-in-Docker
@@ -180,7 +188,7 @@ You don't need it if:
 
 ### Jenkins won't start
 
-1. Check logs: `docker-compose logs jenkins`
+1. Check logs: `docker compose logs jenkins`
 2. Verify Docker socket permissions: The Jenkins container needs read/write access. The socket should be owned by `root:docker` with permissions `srw-rw----` (typically mode `0660`). Check with: `ls -l /var/run/docker.sock`
 3. Ensure ports `8080` and `50000` are not in use
 
@@ -210,13 +218,13 @@ For detailed information about running and maintaining the tests, see [TEST_READ
 ## Stopping Jenkins
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 To remove volumes (⚠️ this deletes all Jenkins data):
 
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## License

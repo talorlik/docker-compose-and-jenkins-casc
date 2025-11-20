@@ -229,7 +229,7 @@ environment:
 
    ```bash
    export JENKINS_ADMIN_PASSWORD=my-secure-password
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Direct in docker-compose.yaml** (not recommended for secrets):
@@ -375,9 +375,9 @@ logging:
 **Viewing Logs**:
 
 ```bash
-docker-compose logs jenkins        # View all logs
-docker-compose logs -f jenkins     # Follow logs in real-time
-docker-compose logs --tail=100 jenkins  # Last 100 lines
+docker compose logs jenkins        # View all logs
+docker compose logs -f jenkins     # Follow logs in real-time
+docker compose logs --tail=100 jenkins  # Last 100 lines
 ```
 
 **Alternative Drivers**: You can also use:
