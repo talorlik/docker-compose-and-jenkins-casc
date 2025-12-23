@@ -1,48 +1,8 @@
 jenkins:
   systemMessage: "Jenkins configured automatically by Jenkins Configuration as Code"
 
-  securityRealm:
-    local:
-      allowsSignup: false
-      users:
-        - id: "admin"
-          name: "Jenkins Admin"
-          password: "${JENKINS_ADMIN_PASSWORD:-admin123}"
-          properties:
-            - "hudson.model.MyViewsProperty"
-            - "hudson.security.HudsonPrivateSecurityRealm$Details"
-            - "jenkins.security.ApiTokenProperty"
-            - "hudson.model.PaneStatusProperties"
-            - "jenkins.security.seed.UserSeedProperty"
-            - "hudson.search.UserSearchProperty"
-            - "hudson.model.TimeZoneProperty"
-        - id: "user"
-          name: "Jenkins User"
-          password: "${JENKINS_USER_PASSWORD:-user123}"
-          properties:
-            - "hudson.model.MyViewsProperty"
-            - "hudson.security.HudsonPrivateSecurityRealm$Details"
-            - "jenkins.security.ApiTokenProperty"
-            - "hudson.model.PaneStatusProperties"
-            - "jenkins.security.seed.UserSeedProperty"
-            - "hudson.search.UserSearchProperty"
-            - "hudson.model.TimeZoneProperty"
-
-  authorizationStrategy:
-    globalMatrix:
-      entries:
-        - "Overall/Administer:admin"
-        - "Overall/Read:authenticated"
-        - "Job/Build:authenticated"
-        - "Job/Cancel:authenticated"
-        - "Job/Read:authenticated"
-        - "Job/Workspace:authenticated"
-        - "View/Read:authenticated"
-        - "View/Read:user"
-        - "Job/Read:user"
-        - "Job/Build:user"
-        - "Job/Cancel:user"
-        - "Job/Workspace:user"
+  numExecutors: 0
+  mode: NORMAL
 
   crumbIssuer:
     standard:
@@ -50,71 +10,98 @@ jenkins:
 
   disableRememberMe: false
 
-  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+      users:
+        - id: "admin"
+          name: "Jenkins Admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+        - id: "devops"
+          name: "DevOps User"
+          password: "${JENKINS_DEVOPS_PASSWORD}"
 
-  mode: NORMAL
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "admin"
+            permissions:
+              - "Overall/Administer"
 
-  nodes:
-    - permanent:
-        name: "master"
-        numExecutors: 2
-        description: "Built-in Jenkins node"
-        remoteFS: "/var/jenkins_home"
-        labelString: "master"
-        launcher:
-          jnlp:
-            workDirSettings:
-              disabled: false
-              failIfWorkDirIsMissing: false
-              internalDir: "remoting"
-              workDirPath: "/var/jenkins_home"
+        - user:
+            name: "devops"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+              - "Job/Discover"
+              - "Job/Build"
+              - "Job/Cancel"
+              - "Job/Configure"
+              - "Job/Create"
+              - "Job/Delete"
+              - "Job/Move"
+              - "Job/Workspace"
+              - "Run/Replay"
+              - "Run/Update"
+              - "Run/Delete"
+              - "View/Read"
+              - "View/Configure"
+              - "View/Create"
+              - "View/Delete"
+              - "Credentials/Create"
+              - "Credentials/Delete"
+              - "Credentials/ManageDomains"
+              - "Credentials/Update"
+              - "Credentials/View"
+              - "Agent/Connect"
+              - "Agent/Disconnect"
+              - "Agent/Configure"
+              - "Agent/Provision"
+              - "SCM/Tag"
 
-    clouds:
-      - docker:
-          name: "docker"
-          dockerApi:
-            dockerHost:
-              uri: "unix:///var/run/docker.sock"
-          containerCapStr: "10"
-          templates:
-            - labelString: "docker"
-              name: "docker-agent"
-              remoteFs: "/home/jenkins/agent"
-              instanceCapStr: "5"
-              mode: NORMAL
-              pullStrategy: PULL_ALWAYS
-              dockerTemplateBase:
-                image: "jenkins/inbound-agent:latest"
-                # 2 GB in MB for memoryLimit
-                memoryLimit: 2048
-                cpuPeriod: 100000
-                cpuQuota: 100000
-                volumes:
-                  - "/var/run/docker.sock:/var/run/docker.sock"
+        - group:
+            name: "authenticated"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+              - "Job/Discover"
+              - "Job/Build"
+              - "Job/Cancel"
+              - "View/Read"
+
+  clouds:
+    - docker:
+        name: "docker"
+        dockerApi:
+          dockerHost:
+            uri: "unix:///var/run/docker.sock"
+          connectTimeout: 60
+          readTimeout: 60
+
+        templates:
+          - labelString: "docker"
+            instanceCapStr: "10"
+            mode: NORMAL
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "jenkins/inbound-agent:lts-jdk21"
+            connector:
+              attach:
+                user: "jenkins"
+            retentionStrategy:
+              idleMinutes: 5
 
 unclassified:
   location:
-    adminAddress: "${JENKINS_ADMIN_EMAIL:-admin@example.com}"
-    url: "http://localhost:8080/"
-
-  globalLibraries:
-    libraries:
-      - name: "shared-library"
-        defaultVersion: "master"
-        retriever:
-          modernSCM:
-            scm:
-              git:
-                id: "shared-library"
-                remote: "https://github.com/jenkinsci/workflow-cps-global-lib-plugin.git"
+    url: "${JENKINS_URL}"
+    adminAddress: "${JENKINS_ADMIN_EMAIL}"
 
 tool:
   git:
     installations:
       - name: "Default"
         home: "git"
-
-  docker:
-    installations:
-      - name: "Docker"
-        home: "/usr/bin/docker"

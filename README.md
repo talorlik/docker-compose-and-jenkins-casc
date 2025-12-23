@@ -1,7 +1,9 @@
 # docker-compose-and-jenkins-casc
 
-> [!INFO]
-> This repository demonstrates how to create a Jenkins server using Docker Compose and Jenkins Configuration as Code (JCasC). The setup includes plugins, and supports both ARM and AMD architectures.
+> [!NOTE]
+> This repository demonstrates how to create a Jenkins server using Docker Compose
+> and Jenkins Configuration as Code (JCasC). The setup includes plugins, and supports
+> both ARM and AMD architectures.
 
 ## Features
 
@@ -15,7 +17,9 @@
   - Workflow Aggregator
   - Matrix Authorization Strategy
 - ✅ Multi-architecture support (ARM64 and AMD64)
-- ✅ Pre-configured admin user
+- ✅ Pre-configured admin and devops users
+- ✅ Secrets-based password management
+- ✅ Automated setup script
 - ✅ Docker-in-Docker support
 
 ## Prerequisites
@@ -26,26 +30,82 @@
 
 ## Quick Start
 
-### 1. Set Admin Password (Optional)
+### Automated Setup (Recommended)
 
-By default, the admin user password is `admin123`. To change it, set the `JENKINS_ADMIN_PASSWORD` environment variable in `docker-compose.yaml` or create a `.env` file:
+Use the `setup-jenkins.sh` script for automated setup:
 
 ```bash
-echo "JENKINS_ADMIN_PASSWORD=your-secure-password" > .env
+./setup-jenkins.sh
 ```
 
-### 2. Build and Start Jenkins
+The script will:
+
+- Prompt for Jenkins URL and admin email
+- Generate secure passwords automatically
+- Create the `.env` file
+- Optionally build the image
+- Start Jenkins with Docker Compose
+
+### Manual Setup
+
+#### 1. Create Secrets
+
+Create the secrets directory and generate secure passwords:
+
+```bash
+mkdir -p secrets
+chmod 700 secrets
+openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+chmod 600 secrets/jenkins_admin_password secrets/jenkins_devops_password
+```
+
+#### 2. Create `.env` File
+
+**Recommended**: Use `setup-jenkins.sh` which automatically detects the Docker
+socket path and creates the `.env` file. The script handles:
+- Detection of Docker socket from active Docker context
+- Special handling for VM-based Docker (Colima/Lima) environments
+- Automatic validation of socket path
+
+Alternatively, create a `.env` file manually with required configuration:
+
+```bash
+# Detect Docker socket path from active Docker context
+DOCKER_HOST_RAW=$(docker context inspect --format '{{.Endpoints.docker.Host}}')
+DOCKER_SOCK_PATH="${DOCKER_HOST_RAW#unix://}"
+
+# For VM-based Docker (Colima/Lima), use /var/run/docker.sock in container
+# For native Docker Engine, use the detected path
+if [[ "$DOCKER_SOCK_PATH" == *".colima/"* ]] || [[ "$DOCKER_SOCK_PATH" == *".lima/"* ]]; then
+    DOCKER_SOCK_PATH="/var/run/docker.sock"
+fi
+
+cat > .env <<EOF
+JENKINS_URL=http://localhost:8080/
+JENKINS_ADMIN_EMAIL=admin@example.com
+DOCKER_SOCK_PATH=${DOCKER_SOCK_PATH}
+EOF
+```
+
+**Note**: The Docker socket path is automatically detected from your active
+Docker context. The setup script handles different Docker environments:
+- **Native Docker Engine**: Uses the detected socket path directly
+- **VM-based Docker (Colima/Lima)**: Automatically uses `/var/run/docker.sock` as the container path
+- On macOS with Colima, the host path might be `/Users/<user>/.colima/default/docker.sock`
+
+#### 3. Build and Start Jenkins
 
 For single architecture (your current platform):
 
 ```bash
-docker compose up
+docker compose up -d --build
 ```
 
 > **NOTE:**
 >
-> - Use the `-d` flag if you want to run as a daemon with the output not showing in the terminal.
-> - Use the `--build` flag if you want to force a rebuild of the image.
+> - Use the `-d` flag to run as a daemon.
+> - Use the `--build` flag to force a rebuild of the image.
 
 For multi-architecture support (ARM64 and AMD64):
 
@@ -57,18 +117,32 @@ For multi-architecture support (ARM64 and AMD64):
 docker compose up -d
 ```
 
-> [!INFO]
-> The `build-multiarch.sh` script builds the Jenkins image for both `linux/amd64` and `linux/arm64` platforms. The built image is tagged as `jenkins/jenkins:latest-jdk21`. The `--load` flag loads the image into the local Docker daemon (note: only one platform can be loaded at a time).
-
 > [!NOTE]
+> The `build-multiarch.sh` script builds the Jenkins image for both `linux/amd64`
+> and `linux/arm64` platforms. The built image is tagged as `jenkins/jenkins:latest-jdk21`.
+> The `--load` flag loads the image into the local Docker daemon (note: only one
+> platform can be loaded at a time).
+>
+>
 > For detailed information about the Docker Compose configuration, see [DOCKER_COMPOSE_CONFIG.md](DOCKER_COMPOSE_CONFIG.md).
 
-### 3. Access Jenkins
+### 4. Access Jenkins
 
 1. Open your browser and navigate to: `http://localhost:8080`
 2. Login with:
    - **Username**: `admin`
-   - **Password**: `admin123` (or your custom password)
+   - **Password**: (stored in `secrets/jenkins_admin_password`)
+
+   Or:
+   - **Username**: `devops`
+   - **Password**: (stored in `secrets/jenkins_devops_password`)
+
+To view passwords:
+
+```bash
+cat secrets/jenkins_admin_password
+cat secrets/jenkins_devops_password
+```
 
 ### 4. Verify Installation
 
@@ -82,10 +156,11 @@ docker compose up -d
 
 The Jenkins configuration is defined in `jenkins.yaml`. This file includes:
 
-- **Security Realm**: Local user authentication with admin and regular users
+- **Security Realm**: Local user authentication with admin and devops users
 - **Authorization**: Role-based access control with fine-grained permissions
-- **Docker Cloud**: Configured for Docker-in-Docker support
-- **System Settings**: Admin email, URL, and other system configurations
+- **Docker Cloud**: Configured for dynamic agent provisioning via Docker socket
+- **System Settings**: Admin email, URL, and other system configurations (loaded
+from environment variables)
 
 For a detailed explanation of each configuration option, see [JENKINS_CONFIG.md](JENKINS_CONFIG.md).
 
@@ -99,7 +174,17 @@ Edit `jenkins.yaml` to customize:
 - Global libraries
 - Tool installations
 
-After making changes, restart Jenkins:
+**Important**: Passwords are managed through Docker Compose secrets stored in the
+`secrets/` directory. To change passwords, regenerate the secret files and restart
+Jenkins:
+
+```bash
+openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+docker compose restart jenkins
+```
+
+After making configuration changes, restart Jenkins:
 
 ```bash
 docker compose restart jenkins
@@ -107,13 +192,18 @@ docker compose restart jenkins
 
 ## Docker-in-Docker
 
-This setup includes Docker-in-Docker support, allowing Jenkins pipelines to build Docker images. The Docker socket is mounted from the host, enabling Jenkins to use the host's Docker daemon.
+This setup includes Docker-in-Docker support, allowing Jenkins pipelines to build
+Docker images. The Docker socket is mounted from the host, enabling Jenkins to
+use the host's Docker daemon.
 
-**Note**: This requires the Jenkins container to run as root. For production environments, consider using Docker-in-Docker containers or a separate Docker daemon.
+**Note**: The Jenkins container runs as the `jenkins` user (non-root) with docker
+group membership for secure Docker socket access. For production environments,
+consider using Docker-in-Docker containers or a separate Docker daemon.
 
 ## Docker Cloud
 
-Docker Cloud is a Jenkins feature that allows Jenkins to dynamically provision Docker containers as build agents on demand, rather than using static build agents.
+Docker Cloud is a Jenkins feature that allows Jenkins to dynamically provision
+Docker containers as build agents on demand, rather than using static build agents.
 
 ### What it does
 
@@ -121,17 +211,19 @@ Instead of maintaining permanent build agents, Jenkins can:
 
 - **Spin up Docker containers** as build agents when jobs need them
 - **Run builds in isolated containers** with clean environments
-- **Automatically tear down containers** when builds complete
+- **Automatically tear down containers** when builds complete (after idle timeout)
 - **Scale agents dynamically** based on workload
 
 ### How it works in this setup
 
 The Docker Cloud is configured in `jenkins.yaml` with the following settings:
 
-- **Container Cap**: Up to 10 total containers can be created
-- **Instance Cap**: Up to 5 containers can run simultaneously per template
-- **Agent Image**: Uses `jenkins/inbound-agent:latest` for build agents
+- **Instance Cap**: Up to 10 containers can run simultaneously
+- **Agent Image**: Uses `jenkins/inbound-agent:lts-jdk21` for build agents
 - **Label**: Jobs can request agents with the `docker` label
+- **Idle Timeout**: Agents are removed after 5 minutes of inactivity
+- **Docker Socket**: Connects to host Docker daemon via dynamically detected
+socket path (automatically detected from Docker context)
 
 ### Example use case
 
@@ -176,7 +268,8 @@ You don't need it if:
 
 ## Volumes
 
-- `jenkins_home`: Persistent storage for Jenkins data, configurations, and build history
+- `jenkins_home`: Persistent storage for Jenkins data, configurations, and build
+history
 - `jenkins.yaml`: Mounted as read-only configuration file for JCasC
 
 ## Ports
@@ -189,12 +282,26 @@ You don't need it if:
 ### Jenkins won't start
 
 1. Check logs: `docker compose logs jenkins`
-2. Verify Docker socket permissions: The Jenkins container needs read/write access. The socket should be owned by `root:docker` with permissions `srw-rw----` (typically mode `0660`). Check with: `ls -l /var/run/docker.sock`
-3. Ensure ports `8080` and `50000` are not in use
+2. Verify Docker socket permissions: The Jenkins container runs as the `jenkins`
+user with docker group membership.
+   The socket should be owned by `root:docker` with permissions `srw-rw----`
+   (typically mode `0660`). Check with: `ls -l $DOCKER_SOCK_PATH`
+   (or check your `.env` file for the detected path)
+3. Verify Docker group GID: The container's docker group uses GID 999 (standard).
+If your host's docker group has a different GID, you may need to adjust the Dockerfile
+or ensure the socket has appropriate permissions.
+4. Ensure ports `8080` and `50000` are not in use
+5. Verify Docker socket path: Check that `DOCKER_SOCK_PATH` in `.env` points to
+a valid socket file. For VM-based Docker (Colima/Lima), the path should be
+`/var/run/docker.sock` (the container-side path).
+6. Check Java PATH: The container sets `PATH="/opt/java/openjdk/bin:$PATH"` to ensure
+Java tools are accessible. If you see Java-related errors, verify the JDK installation
+in the container.
 
 ### Configuration not applied
 
-1. Check JCasC logs in Jenkins: `Manage Jenkins` → `System Log` → `Configuration as Code`
+1. Check JCasC logs in Jenkins: `Manage Jenkins` → `System Log` →
+`Configuration as Code`
 2. Verify `jenkins.yaml` syntax is correct
 3. Ensure the configuration file is mounted correctly
 
@@ -206,7 +313,8 @@ You don't need it if:
 
 ## Tests
 
-This repository includes comprehensive unit tests for the Jenkins configuration, covering:
+This repository includes comprehensive unit tests for the Jenkins configuration,
+covering:
 
 - User authentication (admin and regular users)
 - Admin permissions (Overall/Administer)

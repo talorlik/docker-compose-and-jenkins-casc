@@ -4,41 +4,60 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: jenkins
-    user: root
+
     ports:
       - "8080:8080"
       - "50000:50000"
+
     volumes:
       - jenkins_home:/var/jenkins_home
       - ./jenkins.yaml:/var/jenkins_home/casc_configs/jenkins.yaml:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCK_PATH}:/var/run/docker.sock
+
+    secrets:
+      - jenkins_admin_password
+      - jenkins_devops_password
+
     environment:
       - JENKINS_OPTS=--httpPort=8080
       - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs
-      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin123}
-      - JENKINS_USER_PASSWORD=${JENKINS_USER_PASSWORD:-user123}
+
+      # Provided via .env written by setup-jenkins.sh
+      - JENKINS_URL=${JENKINS_URL}
+      - JENKINS_ADMIN_EMAIL=${JENKINS_ADMIN_EMAIL}
+
+    # Load secrets into env vars for JCasC substitution, then start Jenkins
+    command: >
+      bash -lc '
+        export PATH="/opt/java/openjdk/bin:$PATH";
+        export JENKINS_ADMIN_PASSWORD="$(cat /run/secrets/jenkins_admin_password)";
+        export JENKINS_DEVOPS_PASSWORD="$(cat /run/secrets/jenkins_devops_password)";
+        exec /usr/local/bin/jenkins.sh
+      '
+
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '1'
-          memory: 2G
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     networks:
       - jenkins-network
+
+secrets:
+  jenkins_admin_password:
+    file: ./secrets/jenkins_admin_password
+  jenkins_devops_password:
+    file: ./secrets/jenkins_devops_password
 
 volumes:
   jenkins_home:

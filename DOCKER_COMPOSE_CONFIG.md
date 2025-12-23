@@ -1,7 +1,8 @@
 # Docker Compose Configuration Documentation
 
-> [!INFO]
-> This document provides a detailed explanation of the `docker-compose.yaml` configuration file used to orchestrate the Jenkins container and its dependencies.
+> [!NOTE]
+> This document provides a detailed explanation of the `docker-compose.yaml`
+> configuration file used to orchestrate the Jenkins container and its dependencies.
 
 ## Table of Contents
 
@@ -10,20 +11,25 @@
 - [Services Configuration](#services-configuration)
 - [Volumes Configuration](#volumes-configuration)
 - [Networks Configuration](#networks-configuration)
-- [Managing Environment Variables](#managing-environment-variables)
+- [Managing Secrets and Environment Variables](#managing-secrets-and-environment-variables)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-Docker Compose is a tool for defining and running multi-container Docker applications. The `docker-compose.yaml` file uses YAML syntax to configure services, networks, and volumes in a declarative way.
+Docker Compose is a tool for defining and running multi-container Docker applications.
+The `docker-compose.yaml` file uses YAML syntax to configure services, networks,
+and volumes in a declarative way.
 
-This configuration defines a single Jenkins service with persistent storage, network isolation, and proper volume mounts for configuration and data persistence.
+This configuration defines a single Jenkins service with persistent storage,
+network isolation, and proper volume mounts for configuration and data persistence.
 
 ## Version Declaration
 
 > [!NOTE]
-> The `version` field has been removed as it's obsolete in Docker Compose v2 (the current standard). Docker Compose v2 automatically detects the file format and supports all modern features including:
+> The `version` field has been removed as it's obsolete in Docker Compose v2
+> (the current standard). Docker Compose v2 automatically detects the file format
+> and supports all modern features including:
 >
 > - Named volumes
 > - Networks
@@ -48,16 +54,21 @@ build:
   dockerfile: Dockerfile
 ```
 
-**What it does**: Tells Docker Compose to build the image from a Dockerfile instead of using a pre-built image.
+**What it does**: Tells Docker Compose to build the image from a Dockerfile instead
+of using a pre-built image.
 
 **Components**:
 
-- **`context: .`**: The build context (current directory). All files in this directory are available during the build.
-- **`dockerfile: Dockerfile`**: Specifies which Dockerfile to use (defaults to `Dockerfile` in the context).
+- **`context: .`**: The build context (current directory). All files in this
+directory are available during the build.
+- **`dockerfile: Dockerfile`**: Specifies which Dockerfile to use (defaults to
+`Dockerfile` in the context).
 
-**Purpose**: Builds a custom Jenkins image with pre-installed plugins and Docker CLI.
+**Purpose**: Builds a custom Jenkins image with pre-installed plugins and
+Docker CLI.
 
-**Alternative**: You could use `image: jenkins/jenkins:latest-jdk21` to use a pre-built image, but then plugins wouldn't be pre-installed.
+**Alternative**: You could use `image: jenkins/jenkins:latest-jdk21` to use a
+pre-built image, but then plugins wouldn't be pre-installed.
 
 #### Container Name
 
@@ -65,7 +76,8 @@ build:
 container_name: jenkins
 ```
 
-**What it does**: Sets a custom name for the container instead of the auto-generated name.
+**What it does**: Sets a custom name for the container instead of the
+auto-generated name.
 
 **Purpose**: Makes it easier to reference the container in commands:
 
@@ -73,28 +85,32 @@ container_name: jenkins
 - `docker logs jenkins` works directly.
 - `docker exec -it jenkins bash` is simpler.
 
-**Note**: If you scale the service (run multiple instances), you cannot use `container_name` as each container needs a unique name.
+**Note**: If you scale the service (run multiple instances), you cannot use
+`container_name` as each container needs a unique name.
 
 #### User Configuration
 
-```yaml
-user: root
-```
+The container runs as the `jenkins` user (default from the base image).
+The `jenkins` user is added to the `docker` group during image build, allowing
+it to access the Docker socket without requiring root privileges.
 
-**What it does**: Runs the container as the root user.
+**How it works**:
 
-**Purpose**: Required for Docker-in-Docker functionality. The container needs root access to:
+- The Dockerfile adds the `jenkins` user to the `docker` group (GID 999, standard).
+- The Docker socket is mounted with its host permissions preserved.
+- The `jenkins` user can access Docker commands through group membership.
 
-- Access the Docker socket (`/var/run/docker.sock`).
-- Execute Docker commands.
-- Manage Docker containers.
+**Docker Group GID**: The docker group is created with GID 999. If your host's
+docker group has a different GID, you may need to adjust the Dockerfile or ensure
+the socket has appropriate permissions.
 
-**Security Note**: Running as root is a security consideration. In production, consider:
+**Security Note**: This approach is more secure than running as root.
+For production, consider:
 
 - Using Docker-in-Docker (DinD) containers.
 - Using a separate Docker daemon.
 - Using rootless Docker.
-- Implementing proper access controls.
+- Verifying docker socket permissions on the host.
 
 #### Port Mapping
 
@@ -135,7 +151,8 @@ volumes:
   - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-**What it does**: Mounts directories/files from the host or named volumes into the container.
+**What it does**: Mounts directories/files from the host or named volumes into
+the container.
 
 **Volume Types**:
 
@@ -147,7 +164,8 @@ volumes:
 
    - **`jenkins_home`**: Named volume (defined in `volumes` section)
    - **`/var/jenkins_home`**: Mount point inside container
-   - **Purpose**: Persistent storage for Jenkins data, configurations, plugins, and build history
+   - **Purpose**: Persistent storage for Jenkins data, configurations, plugins,
+   and build history
    - **Location**: Managed by Docker (typically in `/var/lib/docker/volumes/`)
 
 2. **Bind Mount (Read-Only)**:
@@ -165,14 +183,22 @@ volumes:
 3. **Bind Mount (Docker Socket)**:
 
    ```yaml
-   /var/run/docker.sock:/var/run/docker.sock
+   ${DOCKER_SOCK_PATH}:/var/run/docker.sock
    ```
 
-   - **`/var/run/docker.sock`**: Host Docker daemon socket
-   - **Same path in container**: Mounts to the same location
+   - **`${DOCKER_SOCK_PATH}`**: Host Docker daemon socket path
+   (dynamically detected from Docker context)
+   - **`/var/run/docker.sock`**: Mount point inside container
    - **Purpose**: Allows Jenkins to communicate with the host's Docker daemon
-   - **Use Case**: Enables Docker-in-Docker functionality (building images, running containers from pipelines)
+   - **Use Case**: Enables Docker-in-Docker functionality (building images,
+   running containers from pipelines)
    - **Security Note**: This gives the container full access to the Docker daemon
+   - **Portability**: The socket path is automatically detected by `setup-jenkins.sh`
+   from your active Docker context, making it work across different environments
+   (Docker Engine, Colima, etc.)
+   - **VM-based Docker (Colima/Lima)**: For VM-based Docker environments like Colima
+   or Lima, the setup script automatically detects this and uses `/var/run/docker.sock`
+   as the container-side path, while the host path is the VM's socket path
 
 **Volume Options**:
 
@@ -181,14 +207,83 @@ volumes:
 - **`:z`**: SELinux shared content label
 - **`:Z`**: SELinux private unshared label
 
+#### Secrets Configuration
+
+```yaml
+secrets:
+  - jenkins_admin_password
+  - jenkins_devops_password
+```
+
+**What it does**: Mounts Docker Compose secrets into the container.
+
+**Secrets Explained**:
+
+- **`jenkins_admin_password`**: Secret file containing the admin user password.
+- **`jenkins_devops_password`**: Secret file containing the devops user password.
+
+**Secret Files**: Secrets are stored in the `secrets/` directory (git-ignored):
+
+- `secrets/jenkins_admin_password` - Admin user password
+- `secrets/jenkins_devops_password` - DevOps user password
+
+**How Secrets Work**: Docker Compose mounts secret files to `/run/secrets/` inside
+the container. The `command` override reads these files and exports them as environment
+variables before starting Jenkins.
+
+**Generating Secrets**: Use the `setup-jenkins.sh` script to automatically generate
+secure passwords, or manually create them:
+
+```bash
+mkdir -p secrets
+chmod 700 secrets
+openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+chmod 600 secrets/jenkins_admin_password secrets/jenkins_devops_password
+```
+
+#### Command Override
+
+```yaml
+command: >
+  bash -lc '
+    export PATH="/opt/java/openjdk/bin:$PATH";
+    export JENKINS_ADMIN_PASSWORD="$(cat /run/secrets/jenkins_admin_password)";
+    export JENKINS_DEVOPS_PASSWORD="$(cat /run/secrets/jenkins_devops_password)";
+    exec /usr/local/bin/jenkins.sh
+  '
+```
+
+**What it does**: Sets up the environment and loads secrets into environment
+variables before starting Jenkins.
+
+**How It Works**:
+
+1. **PATH Configuration**: Adds Java JDK binaries to PATH
+   (`/opt/java/openjdk/bin`) to ensure Java commands are available
+2. Reads password from `/run/secrets/jenkins_admin_password` and exports as
+   `JENKINS_ADMIN_PASSWORD`
+3. Reads password from `/run/secrets/jenkins_devops_password` and exports as
+   `JENKINS_DEVOPS_PASSWORD`
+4. Executes the Jenkins startup script with these environment variables
+   available
+
+**Purpose**:
+
+- Ensures Java/JDK tools are accessible in the container's PATH
+- Makes secrets available to JCasC configuration (`jenkins.yaml`) via
+  environment variable substitution
+
 #### Environment Variables
 
 ```yaml
 environment:
   - JENKINS_OPTS=--httpPort=8080
   - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs
-  - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin123}
-  - JENKINS_USER_PASSWORD=${JENKINS_USER_PASSWORD:-user123}
+
+  # Must be provided via .env or shell exports. No defaults.
+  - JENKINS_URL=${JENKINS_URL}
+  - JENKINS_ADMIN_EMAIL=${JENKINS_ADMIN_EMAIL}
 ```
 
 **What it does**: Sets environment variables inside the container.
@@ -205,37 +300,49 @@ environment:
    - Points to the directory where `jenkins.yaml` is mounted.
    - JCasC plugin scans this directory for `.yaml` and `.yml` files.
 
-3. **`JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin123}`**:
-   - Admin user password (used in `jenkins.yaml`).
-   - **Syntax**: `${VARIABLE:-default}` means "use VARIABLE if set, otherwise use default".
-   - Can be set in `.env` file or shell environment.
-   - Default: `admin123`.
+3. **`JENKINS_URL=${JENKINS_URL}`**:
+   - Public URL of the Jenkins instance (required).
+   - Must be set in `.env` file or shell environment.
+   - Example: `http://localhost:8080/`
 
-4. **`JENKINS_USER_PASSWORD=${JENKINS_USER_PASSWORD:-user123}`**:
-   - Regular user password (used in `jenkins.yaml`)
-   - Same syntax as admin password
-   - Default: `user123`
+4. **`JENKINS_ADMIN_EMAIL=${JENKINS_ADMIN_EMAIL}`**:
+   - Email address of the Jenkins administrator (required).
+   - Must be set in `.env` file or shell environment.
+   - Example: `admin@example.com`
+
+**Note**: Password environment variables (`JENKINS_ADMIN_PASSWORD` and `JENKINS_DEVOPS_PASSWORD`)
+are loaded via the `command` override from Docker Compose secrets, not from the
+`environment` section.
 
 **Setting Environment Variables**:
 
-1. **`.env` file** (recommended):
+1. **`.env` file** (recommended, created by `setup-jenkins.sh`):
 
    ```bash
-   JENKINS_ADMIN_PASSWORD=my-secure-password
-   JENKINS_USER_PASSWORD=another-secure-password
+   JENKINS_URL=http://localhost:8080/
+   JENKINS_ADMIN_EMAIL=admin@example.com
+   DOCKER_SOCK_PATH=/var/run/docker.sock
    ```
+
+   > [!NOTE]
+   >
+   > `DOCKER_SOCK_PATH` is automatically detected from your active Docker
+   > context by `setup-jenkins.sh`. The script:
+   > - Detects the socket path from `docker context inspect`
+   > - For VM-based Docker (Colima/Lima), uses `/var/run/docker.sock` as the
+   >   container path
+   > - For native Docker Engine, uses the detected host socket path directly
+   > - On macOS with Colima, the host path might be
+   >   `/Users/<user>/.colima/default/docker.sock`
 
 2. **Shell environment**:
 
    ```bash
-   export JENKINS_ADMIN_PASSWORD=my-secure-password
+   DOCKER_SOCK_PATH=$(docker context inspect --format '{{.Endpoints.docker.Host}}' | sed 's|unix://||')
+   export JENKINS_URL="http://localhost:8080/"
+   export JENKINS_ADMIN_EMAIL="admin@example.com"
+   export DOCKER_SOCK_PATH="${DOCKER_SOCK_PATH}"
    docker compose up -d
-   ```
-
-3. **Direct in docker-compose.yaml** (not recommended for secrets):
-
-   ```yaml
-   - JENKINS_ADMIN_PASSWORD=my-password
    ```
 
 #### Restart Policy
@@ -259,45 +366,9 @@ restart: unless-stopped
 - Docker daemon restart.
 - Container crash.
 
-**Why `unless-stopped`**: Allows you to manually stop the container (`docker-compose stop`) without it automatically restarting, but will restart on system reboots.
-
-#### Resource Limits
-
-```yaml
-deploy:
-  resources:
-    limits:
-      cpus: '2'
-      memory: 4G
-    reservations:
-      cpus: '1'
-      memory: 2G
-```
-
-**What it does**: Sets CPU and memory limits and reservations for the Jenkins container.
-
-**Components**:
-
-- **`limits`**: Maximum resources the container can use.
-  - **`cpus: '2'`**: Maximum of 2 CPU cores.
-  - **`memory: 4G`**: Maximum of 4 gigabytes of RAM.
-- **`reservations`**: Guaranteed minimum resources allocated to the container.
-  - **`cpus: '1'`**: Guaranteed 1 CPU core.
-  - **`memory: 2G`**: Guaranteed 2 gigabytes of RAM.
-
-**Purpose**: Prevents the container from consuming excessive system resources and ensures it has minimum resources available.
-
-**Benefits**:
-
-- **Resource protection**: Prevents Jenkins from starving other services.
-- **Predictable performance**: Guaranteed minimum resources ensure consistent operation.
-- **Resource planning**: Helps with capacity planning and resource allocation.
-
-**Adjusting Limits**: Modify these values based on your workload:
-
-- Light usage: `cpus: '1'`, `memory: 2G`.
-- Medium usage: `cpus: '2'`, `memory: 4G` (current setting).
-- Heavy usage: `cpus: '4'`, `memory: 8G` or more.
+**Why `unless-stopped`**: Allows you to manually stop the container
+(`docker-compose stop`) without it automatically restarting, but will restart
+on system reboots.
 
 #### Health Check
 
@@ -316,13 +387,16 @@ healthcheck:
 
 - **`test`**: Command to check container health.
   - **`CMD`**: Execute command inside the container.
-  - **`curl -f http://localhost:8080/login`**: Checks if Jenkins login page is accessible (returns non-zero on failure).
+  - **`curl -f http://localhost:8080/login`**: Checks if Jenkins login page is
+  accessible (returns non-zero on failure).
 - **`interval: 30s`**: Time between health checks (30 seconds).
 - **`timeout: 10s`**: Maximum time to wait for health check to complete.
 - **`retries: 3`**: Number of consecutive failures before marking as unhealthy.
-- **`start_period: 60s`**: Grace period during container startup (60 seconds) where failures don't count.
+- **`start_period: 60s`**: Grace period during container startup (60 seconds)
+where failures don't count.
 
-**Purpose**: Enables Docker and orchestration tools to detect when Jenkins is unhealthy and take action (restart, remove from load balancer, etc.).
+**Purpose**: Enables Docker and orchestration tools to detect when Jenkins is
+unhealthy and take action (restart, remove from load balancer, etc.).
 
 **Health Status**:
 
@@ -402,7 +476,8 @@ networks:
 - Allows multiple services to communicate on the same network.
 - Provides DNS resolution between services.
 
-**Benefits**: If you add more services (database, reverse proxy, etc.), they can communicate using service names as hostnames.
+**Benefits**: If you add more services (database, reverse proxy, etc.), they can
+communicate using service names as hostnames.
 
 ## Volumes Configuration
 
@@ -484,42 +559,95 @@ networks:
 - **Inspect network**: `docker network inspect jenkins-network`.
 - **Remove network**: `docker network rm jenkins-network`.
 
-## Managing Environment Variables
+## Managing Secrets and Environment Variables
 
-### Setting Passwords
+### Setting Up Secrets
 
-Create a `.env` file in the same directory as `docker-compose.yaml`:
+Secrets are managed through Docker Compose secrets stored in the `secrets/` directory.
+Use the `setup-jenkins.sh` script to automatically generate secure passwords:
 
 ```bash
-JENKINS_ADMIN_PASSWORD=your-secure-admin-password
-JENKINS_USER_PASSWORD=your-secure-user-password
+./setup-jenkins.sh
+```
+
+Or manually create secret files:
+
+```bash
+mkdir -p secrets
+chmod 700 secrets
+openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+chmod 600 secrets/jenkins_admin_password secrets/jenkins_devops_password
 ```
 
 **Security Best Practices**:
 
+1. **Never commit `secrets/` directory** to version control (already in `.gitignore`).
+2. **Use strong passwords** generated with `openssl rand -base64 32`.
+3. **Set proper permissions**: `700` for directory, `600` for files.
+4. **Rotate passwords** regularly by regenerating secret files and restarting Jenkins.
+
+### Setting Configuration Variables
+
+Create a `.env` file in the same directory as `docker-compose.yaml`:
+
+```bash
+JENKINS_URL=http://localhost:8080/
+JENKINS_ADMIN_EMAIL=admin@example.com
+```
+
+The `setup-jenkins.sh` script will prompt for these values and create the `.env`
+file automatically.
+
+**Security Best Practices**:
+
 1. **Never commit `.env` files** to version control (already in `.gitignore`).
-2. **Use strong passwords** in production.
-3. **Rotate passwords** regularly.
-4. **Use secrets management** (Docker Secrets, HashiCorp Vault, etc.) for production.
+2. **Use the setup script**: `setup-jenkins.sh` handles both secrets and `.env`
+file creation.
 
 ### Available Environment Variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `JENKINS_ADMIN_PASSWORD` | `admin123` | Admin user password |
-| `JENKINS_USER_PASSWORD` | `user123` | Regular user password |
+| Variable | Source | Purpose |
+|----------|--------|---------|
+| `JENKINS_ADMIN_PASSWORD` | Docker Compose secret | Admin user password (loaded from `secrets/jenkins_admin_password`) |
+| `JENKINS_DEVOPS_PASSWORD` | Docker Compose secret | DevOps user password (loaded from `secrets/jenkins_devops_password`) |
+| `JENKINS_URL` | `.env` file or shell | Public URL of Jenkins instance (required) |
+| `JENKINS_ADMIN_EMAIL` | `.env` file or shell | Admin email address (required) |
+| `DOCKER_SOCK_PATH` | `.env` file or shell | Docker socket path on host (automatically detected by `setup-jenkins.sh`) |
+
+**Note**: Password variables are loaded from Docker Compose secrets via the
+`command` override, not from the `environment` section.
+
+## Secrets Configuration
+
+The `docker-compose.yaml` includes a `secrets` section that defines the secret files:
+
+```yaml
+secrets:
+  jenkins_admin_password:
+    file: ./secrets/jenkins_admin_password
+  jenkins_devops_password:
+    file: ./secrets/jenkins_devops_password
+```
+
+These secrets are mounted to `/run/secrets/` inside the container and loaded
+into environment variables by the `command` override.
 
 ## Best Practices
 
-1. **Use `.env` file for secrets**: Never hardcode passwords in `docker-compose.yaml`.
-2. **Version control**: Commit `docker-compose.yaml` but not `.env` files.
-3. **Named volumes**: Use named volumes for data that should persist.
-4. **Read-only mounts**: Mount configuration files as read-only when possible.
-5. **Resource limits**: ✅ **Implemented** - Resource limits are configured in the `deploy.resources` section (see [Resource Limits](#resource-limits) above).
-
-6. **Health checks**: ✅ **Implemented** - Health check is configured to monitor Jenkins availability (see [Health Check](#health-check) above).
-
-7. **Logging**: ✅ **Implemented** - Log rotation is configured to prevent log files from growing unbounded (see [Logging Configuration](#logging-configuration) above).
+1. **Use Docker Compose secrets**: Passwords are managed through secrets, not
+hardcoded or in `.env` files.
+2. **Use the setup script**: `setup-jenkins.sh` automates secret generation
+and `.env` file creation.
+3. **Version control**: Commit `docker-compose.yaml` but not `.env` files or
+`secrets/` directory.
+4. **Named volumes**: Use named volumes for data that should persist.
+5. **Read-only mounts**: Mount configuration files as read-only when possible.
+6. **Health checks**: ✅ **Implemented** - Health check is configured to monitor
+Jenkins availability (see [Health Check](#health-check) above).
+7. **Logging**: ✅ **Implemented** - Log rotation is configured to prevent log
+files from growing unbounded (see [Logging Configuration](#logging-configuration)
+above).
 
 ## Troubleshooting
 
@@ -527,7 +655,10 @@ JENKINS_USER_PASSWORD=your-secure-user-password
 
 1. **Check logs**: `docker-compose logs jenkins`.
 2. **Verify ports**: Ensure ports 8080 and 50000 are not in use.
-3. **Check Docker socket**: Verify `/var/run/docker.sock` exists and has correct permissions.
+3. **Check Docker socket**: Verify the Docker socket path
+(from `DOCKER_SOCK_PATH` in `.env`)
+exists and has correct permissions. Check with: `ls -l $DOCKER_SOCK_PATH` or
+check your `.env` file.
 4. **Check volumes**: Ensure volume paths are correct.
 
 ### Configuration not applied
@@ -536,13 +667,31 @@ JENKINS_USER_PASSWORD=your-secure-user-password
 2. **Check path**: Ensure `CASC_JENKINS_CONFIG` points to the correct directory.
 3. **Check permissions**: Verify file permissions on `jenkins.yaml`.
 4. **Check logs**: Look for JCasC errors in Jenkins logs.
+5. **Verify secrets**: Ensure secret files exist and are readable: `ls -l secrets/`
+6. **Check environment variables**: Verify `JENKINS_URL` and `JENKINS_ADMIN_EMAIL`
+are set in `.env` file.
 
 ### Docker socket permission denied
 
-1. **Check ownership**: `ls -l /var/run/docker.sock`.
-2. **Add user to docker group**: `sudo usermod -aG docker $USER` (Linux).
-3. **Restart Docker**: `sudo systemctl restart docker` (Linux).
-4. **On Mac/Windows**: Docker Desktop handles this automatically.
+1. **Check ownership**: `ls -l $DOCKER_SOCK_PATH` (or check your `.env` file
+for the path).
+   The socket should be owned by `root:docker` with permissions `srw-rw----`.
+2. **Verify socket path**: Ensure `DOCKER_SOCK_PATH` in `.env` points to a
+valid socket file.
+3. **Check Docker group GID**: The container's docker group uses GID 999.
+Verify your host's docker group GID:
+
+   ```bash
+   getent group docker | cut -d: -f3
+   ```
+
+   If it's different from 999, you may need to adjust the Dockerfile to
+   match your host's GID.
+4. **Add user to docker group** (host): `sudo usermod -aG docker $USER`
+(Linux, for standard `/var/run/docker.sock`).
+5. **Restart Docker**: `sudo systemctl restart docker` (Linux).
+6. **On Mac/Windows**: Docker Desktop handles this automatically. For Colima,
+ensure the socket path is correctly detected.
 
 ### Volume data lost
 
@@ -553,7 +702,8 @@ JENKINS_USER_PASSWORD=your-secure-user-password
 
 ### Port conflicts
 
-1. **Change host port**: Modify `"8080:8080"` to `"9080:8080"` (or any available port).
+1. **Change host port**: Modify `"8080:8080"` to `"9080:8080"` (or any available
+port).
 2. **Check what's using port**:
    - Linux: `sudo lsof -i :8080`.
    - Mac: `lsof -i :8080`.

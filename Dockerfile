@@ -1,5 +1,5 @@
 # Stage 1: Base image with system packages
-FROM jenkins/jenkins:latest-jdk21 AS base
+FROM jenkins/jenkins:lts-jdk21 AS base
 
 USER root
 
@@ -21,5 +21,10 @@ RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
 # Stage 3: Final image
 FROM plugins
+
+# Add jenkins user to docker group to access Docker socket without root
+# The docker group GID will match the host's docker group when the socket is mounted
+RUN groupadd -g 999 docker 2>/dev/null || true && \
+    usermod -aG docker jenkins
 
 USER jenkins

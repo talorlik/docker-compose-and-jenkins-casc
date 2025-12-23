@@ -1,6 +1,7 @@
 configuration-as-code:latest
 matrix-auth:latest
-blueocean:latest
-docker-workflow:latest
-docker-plugin:latest
 workflow-aggregator:latest
+git:latest
+
+docker-plugin:latest
+docker-workflow:latest
