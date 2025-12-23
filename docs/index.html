@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jenkins with Docker Compose and Configuration as Code - Documentation</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="light-theme.css" id="theme-stylesheet">
+</head>
+<body>
+    <!-- Sticky Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo">Jenkins Docker Compose</a>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#configuration">Configuration</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="#access">Access</a></li>
+                <li><a href="#security">Security</a></li>
+                <li><a href="#support">Support</a></li>
+                <li>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <span class="icon" id="sunIcon" title="Switch to light theme">☀️</span>
+                        <span class="icon hidden" id="moonIcon" title="Switch to dark theme">🌙</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-content">
+            <h1>Jenkins with Docker Compose and Configuration as Code</h1>
+            <p>Complete Jenkins server setup using Docker Compose with Jenkins Configuration as Code (JCasC), pre-installed plugins, multi-architecture support, and Docker-in-Docker capabilities</p>
+            <img src="header_banner.png" alt="Project Banner" class="hero-banner">
+        </div>
+    </section>
+
+    <!-- Project Overview -->
+    <section id="overview">
+        <h2>Project Overview</h2>
+        <div class="card">
+            <p>This repository demonstrates how to create a Jenkins server using Docker Compose and Jenkins Configuration as Code (JCasC). The setup includes plugins, and supports both ARM and AMD architectures.</p>
+        </div>
+
+        <h3>Features</h3>
+        <ul>
+            <li><strong>Jenkins running in Docker</strong> - Containerized Jenkins server with persistent storage</li>
+            <li><strong>Configuration as Code (JCasC)</strong> - Automated setup with declarative configuration</li>
+            <li><strong>Pre-installed plugins</strong>:
+                <ul>
+                    <li>Blue Ocean</li>
+                    <li>Docker Pipeline</li>
+                    <li>Configuration as Code</li>
+                    <li>Docker Plugin</li>
+                    <li>Workflow Aggregator</li>
+                    <li>Matrix Authorization Strategy</li>
+                </ul>
+            </li>
+            <li><strong>Multi-architecture support</strong> - ARM64 and AMD64 platforms</li>
+            <li><strong>Pre-configured users</strong> - Admin and devops users with role-based permissions</li>
+            <li><strong>Secrets-based password management</strong> - Secure password handling via Docker Compose secrets</li>
+            <li><strong>Automated setup script</strong> - Streamlined setup with <code>setup-jenkins.sh</code></li>
+            <li><strong>Docker-in-Docker support</strong> - Build Docker images from Jenkins pipelines</li>
+        </ul>
+
+        <h3>Prerequisites</h3>
+        <ul>
+            <li><strong>Docker Engine</strong> 20.10 or later</li>
+            <li><strong>Docker Compose</strong> 2.0 or later</li>
+            <li><strong>Docker Buildx</strong> (included with Docker Desktop) - For multi-arch builds</li>
+        </ul>
+
+        <h3>Core Components</h3>
+        <ul>
+            <li><strong>Jenkins</strong> - Latest LTS with JDK 21</li>
+            <li><strong>Docker Compose</strong> - Container orchestration</li>
+            <li><strong>Jenkins Configuration as Code (JCasC)</strong> - Declarative configuration management</li>
+            <li><strong>Docker Cloud</strong> - Dynamic agent provisioning</li>
+            <li><strong>Docker-in-Docker</strong> - Docker socket mounting for pipeline builds</li>
+        </ul>
+    </section>
+
+    <!-- Getting Started -->
+    <section id="getting-started">
+        <h2>Getting Started</h2>
+
+        <h3>Automated Setup (Recommended)</h3>
+        <div class="card">
+            <p>Use the <code>setup-jenkins.sh</code> script for automated setup:</p>
+            <pre><code>./setup-jenkins.sh</code></pre>
+            <p>The script will:</p>
+            <ul>
+                <li>Prompt for Jenkins URL and admin email</li>
+                <li>Generate secure passwords automatically</li>
+                <li>Create the <code>.env</code> file</li>
+                <li>Optionally build the image</li>
+                <li>Start Jenkins with Docker Compose</li>
+            </ul>
+        </div>
+
+        <h3>Manual Setup</h3>
+        <div class="deployment-options">
+            <div class="deployment-card">
+                <h3>Step 1: Create Secrets</h3>
+                <p>Create the secrets directory and generate secure passwords:</p>
+                <pre><code>mkdir -p secrets
+chmod 700 secrets
+openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+chmod 600 secrets/jenkins_admin_password secrets/jenkins_devops_password</code></pre>
+            </div>
+
+            <div class="deployment-card">
+                <h3>Step 2: Create .env File</h3>
+                <p><strong>Recommended</strong>: Use <code>setup-jenkins.sh</code> which automatically detects the Docker socket path.</p>
+                <p>Alternatively, create a <code>.env</code> file manually:</p>
+                <pre><code>JENKINS_URL=http://localhost:8080/
+JENKINS_ADMIN_EMAIL=admin@example.com
+DOCKER_SOCK_PATH=/var/run/docker.sock</code></pre>
+                <p><strong>Note</strong>: The Docker socket path is automatically detected from your active Docker context. For VM-based Docker (Colima/Lima), the setup script handles this automatically.</p>
+            </div>
+
+            <div class="deployment-card">
+                <h3>Step 3: Build and Start</h3>
+                <p>For single architecture (your current platform):</p>
+                <pre><code>docker compose up -d --build</code></pre>
+                <p>For multi-architecture support (ARM64 and AMD64):</p>
+                <pre><code>./build-multiarch.sh
+docker compose up -d</code></pre>
+            </div>
+        </div>
+
+        <h3>Quick Start Commands</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Start Jenkins</td>
+                    <td><code>docker compose up -d</code></td>
+                </tr>
+                <tr>
+                    <td>View logs</td>
+                    <td><code>docker compose logs -f jenkins</code></td>
+                </tr>
+                <tr>
+                    <td>Stop Jenkins</td>
+                    <td><code>docker compose down</code></td>
+                </tr>
+                <tr>
+                    <td>Restart Jenkins</td>
+                    <td><code>docker compose restart jenkins</code></td>
+                </tr>
+                <tr>
+                    <td>Remove volumes (⚠️ deletes data)</td>
+                    <td><code>docker compose down -v</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Configuration -->
+    <section id="configuration">
+        <h2>Configuration</h2>
+
+        <h3>Jenkins Configuration as Code</h3>
+        <div class="card">
+            <p>The Jenkins configuration is defined in <code>jenkins.yaml</code>. This file includes:</p>
+            <ul>
+                <li><strong>Security Realm</strong>: Local user authentication with admin and devops users</li>
+                <li><strong>Authorization</strong>: Role-based access control with fine-grained permissions</li>
+                <li><strong>Docker Cloud</strong>: Configured for dynamic agent provisioning via Docker socket</li>
+                <li><strong>System Settings</strong>: Admin email, URL, and other system configurations (loaded from environment variables)</li>
+            </ul>
+            <p><strong>For detailed explanation:</strong> See <a href="../JENKINS_CONFIG.md">JENKINS_CONFIG.md</a></p>
+        </div>
+
+        <h3>Docker Compose Configuration</h3>
+        <div class="card">
+            <p>The <code>docker-compose.yaml</code> file orchestrates the Jenkins container and includes:</p>
+            <ul>
+                <li><strong>Service Configuration</strong>: Jenkins service with build, ports, volumes, and health checks</li>
+                <li><strong>Secrets Management</strong>: Docker Compose secrets for password handling</li>
+                <li><strong>Volume Mounts</strong>: Persistent storage and configuration file mounting</li>
+                <li><strong>Docker Socket</strong>: Mounted for Docker-in-Docker support</li>
+                <li><strong>Networking</strong>: Custom network for service isolation</li>
+            </ul>
+            <p><strong>For detailed explanation:</strong> See <a href="../DOCKER_COMPOSE_CONFIG.md">DOCKER_COMPOSE_CONFIG.md</a></p>
+        </div>
+
+        <h3>Environment Variables</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Source</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>JENKINS_ADMIN_PASSWORD</code></td>
+                    <td>Docker Compose secret</td>
+                    <td>Admin user password (loaded from <code>secrets/jenkins_admin_password</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>JENKINS_DEVOPS_PASSWORD</code></td>
+                    <td>Docker Compose secret</td>
+                    <td>DevOps user password (loaded from <code>secrets/jenkins_devops_password</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>JENKINS_URL</code></td>
+                    <td><code>.env</code> file</td>
+                    <td>Public URL of Jenkins instance (required, e.g., <code>http://localhost:8080/</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>JENKINS_ADMIN_EMAIL</code></td>
+                    <td><code>.env</code> file</td>
+                    <td>Admin email address (required, e.g., <code>admin@example.com</code>)</td>
+                </tr>
+                <tr>
+                    <td><code>DOCKER_SOCK_PATH</code></td>
+                    <td><code>.env</code> file</td>
+                    <td>Docker socket path on host (automatically detected by <code>setup-jenkins.sh</code>)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Customizing Configuration</h3>
+        <div class="card">
+            <p>Edit <code>jenkins.yaml</code> to customize:</p>
+            <ul>
+                <li>User accounts and permissions</li>
+                <li>Jenkins system settings</li>
+                <li>Docker cloud configuration</li>
+                <li>Global libraries</li>
+                <li>Tool installations</li>
+            </ul>
+            <p><strong>Important</strong>: Passwords are managed through Docker Compose secrets stored in the <code>secrets/</code> directory. To change passwords, regenerate the secret files and restart Jenkins:</p>
+            <pre><code>openssl rand -base64 32 > secrets/jenkins_admin_password
+openssl rand -base64 32 > secrets/jenkins_devops_password
+docker compose restart jenkins</code></pre>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture">
+        <h2>Architecture</h2>
+
+        <h3>Docker Cloud</h3>
+        <div class="card">
+            <p>Docker Cloud is a Jenkins feature that allows Jenkins to dynamically provision Docker containers as build agents on demand, rather than using static build agents.</p>
+            <h4>What it does</h4>
+            <p>Instead of maintaining permanent build agents, Jenkins can:</p>
+            <ul>
+                <li><strong>Spin up Docker containers</strong> as build agents when jobs need them</li>
+                <li><strong>Run builds in isolated containers</strong> with clean environments</li>
+                <li><strong>Automatically tear down containers</strong> when builds complete (after idle timeout)</li>
+                <li><strong>Scale agents dynamically</strong> based on workload</li>
+            </ul>
+            <h4>Configuration</h4>
+            <p>The Docker Cloud is configured in <code>jenkins.yaml</code> with the following settings:</p>
+            <ul>
+                <li><strong>Instance Cap</strong>: Up to 10 containers can run simultaneously</li>
+                <li><strong>Agent Image</strong>: Uses <code>jenkins/inbound-agent:lts-jdk21</code> for build agents</li>
+                <li><strong>Label</strong>: Jobs can request agents with the <code>docker</code> label</li>
+                <li><strong>Idle Timeout</strong>: Agents are removed after 5 minutes of inactivity</li>
+                <li><strong>Docker Socket</strong>: Connects to host Docker daemon via dynamically detected socket path</li>
+            </ul>
+            <h4>Example Pipeline Usage</h4>
+            <pre><code>pipeline {
+    agent {
+        label 'docker'
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'echo "Building in Docker agent"'
+            }
+        }
+    }
+}</code></pre>
+        </div>
+
+        <h3>Docker-in-Docker</h3>
+        <div class="card">
+            <p>This setup includes Docker-in-Docker support, allowing Jenkins pipelines to build Docker images. The Docker socket is mounted from the host, enabling Jenkins to use the host's Docker daemon.</p>
+            <p><strong>Note</strong>: The Jenkins container runs as the <code>jenkins</code> user (non-root) with docker group membership for secure Docker socket access. For production environments, consider using Docker-in-Docker containers or a separate Docker daemon.</p>
+        </div>
+
+        <h3>Volumes</h3>
+        <ul>
+            <li><strong><code>jenkins_home</code></strong>: Persistent storage for Jenkins data, configurations, and build history</li>
+            <li><strong><code>jenkins.yaml</code></strong>: Mounted as read-only configuration file for JCasC</li>
+            <li><strong>Docker Socket</strong>: Mounted from host for Docker-in-Docker support</li>
+        </ul>
+
+        <h3>Ports</h3>
+        <ul>
+            <li><strong>8080</strong>: Jenkins web interface</li>
+            <li><strong>50000</strong>: Jenkins agent communication port</li>
+        </ul>
+
+        <h3>Networks</h3>
+        <div class="card">
+            <p>Jenkins runs on a custom Docker network (<code>jenkins-network</code>) for service isolation. This allows for future expansion with additional services (databases, reverse proxies, etc.) that can communicate using service names as hostnames.</p>
+        </div>
+    </section>
+
+    <!-- Documentation Index -->
+    <section id="documentation">
+        <h2>Documentation</h2>
+
+        <h3>Core Documentation</h3>
+        <div class="doc-grid">
+            <div class="doc-item">
+                <a href="../README.md">README</a>
+                <p>Project overview, features, quick start guide, and usage instructions</p>
+            </div>
+            <div class="doc-item">
+                <a href="../JENKINS_CONFIG.md">Jenkins Configuration</a>
+                <p>Detailed explanation of JCasC configuration file and all settings</p>
+            </div>
+            <div class="doc-item">
+                <a href="../DOCKER_COMPOSE_CONFIG.md">Docker Compose Configuration</a>
+                <p>Complete guide to Docker Compose setup, volumes, networks, and secrets</p>
+            </div>
+            <div class="doc-item">
+                <a href="../PRD-REQUIREMENTS.md">PRD Requirements</a>
+                <p>Product requirements document with setup instructions and file structure</p>
+            </div>
+        </div>
+
+        <h3>Testing Documentation</h3>
+        <div class="doc-grid">
+            <div class="doc-item">
+                <a href="../TEST_README.md">Test Documentation</a>
+                <p>Comprehensive unit tests for Jenkins configuration, authentication, and permissions</p>
+            </div>
+        </div>
+
+        <h3>Additional Resources</h3>
+        <div class="doc-grid">
+            <div class="doc-item">
+                <a href="../CHANGELOG.md">Changelog</a>
+                <p>All notable changes to the project, organized by version</p>
+            </div>
+            <div class="doc-item">
+                <a href="../LICENSE">License</a>
+                <p>MIT License - Full license text</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Access Information -->
+    <section id="access">
+        <h2>Accessing Jenkins</h2>
+
+        <h3>Web Interface</h3>
+        <div class="card">
+            <p><strong>URL</strong>: <code>http://localhost:8080</code></p>
+            <p>After starting Jenkins with Docker Compose, access the web interface at the configured URL (default: <code>http://localhost:8080</code>).</p>
+        </div>
+
+        <h3>Default Credentials</h3>
+        <div class="card">
+            <p>Two pre-configured users are available:</p>
+            <h4>Admin User</h4>
+            <ul>
+                <li><strong>Username</strong>: <code>admin</code></li>
+                <li><strong>Password</strong>: Stored in <code>secrets/jenkins_admin_password</code></li>
+                <li><strong>Permissions</strong>: Full administrative access (<code>Overall/Administer</code>)</li>
+            </ul>
+            <h4>DevOps User</h4>
+            <ul>
+                <li><strong>Username</strong>: <code>devops</code></li>
+                <li><strong>Password</strong>: Stored in <code>secrets/jenkins_devops_password</code></li>
+                <li><strong>Permissions</strong>: Extensive job, agent, and credential management (but not <code>Overall/Administer</code>)</li>
+            </ul>
+            <p><strong>To view passwords:</strong></p>
+            <pre><code>cat secrets/jenkins_admin_password
+cat secrets/jenkins_devops_password</code></pre>
+        </div>
+
+        <h3>Blue Ocean</h3>
+        <div class="card">
+            <p><strong>URL</strong>: <code>http://localhost:8080/blue</code></p>
+            <p>Blue Ocean provides a modern, intuitive user interface for Jenkins pipelines. It should be accessible after installation.</p>
+        </div>
+
+        <h3>Verification</h3>
+        <ul>
+            <li>Blue Ocean should be accessible at: <code>http://localhost:8080/blue</code></li>
+            <li>Docker Pipeline plugin should be available in pipeline configurations</li>
+            <li>Configuration as Code plugin should show the applied configuration</li>
+            <li>Docker Cloud should be configured in: <strong>Manage Jenkins</strong> → <strong>Nodes and Clouds</strong> → <strong>Clouds</strong></li>
+        </ul>
+    </section>
+
+    <!-- Security Considerations -->
+    <section id="security">
+        <h2>Security Considerations</h2>
+
+        <div class="card">
+            <h3>Key Security Features</h3>
+            <ul>
+                <li><strong>Secrets Management</strong>: Passwords managed via Docker Compose secrets stored in the <code>secrets/</code> directory (git-ignored). Never commit plain-text passwords to version control.</li>
+                <li><strong>Non-Root User</strong>: Jenkins container runs as the <code>jenkins</code> user (non-root) with docker group membership for secure Docker socket access.</li>
+                <li><strong>Docker Socket Security</strong>: Docker socket is mounted with appropriate permissions. The container's docker group uses GID 999 (standard).</li>
+                <li><strong>Read-Only Configuration</strong>: JCasC configuration file (<code>jenkins.yaml</code>) is mounted as read-only to prevent accidental modification.</li>
+                <li><strong>Health Checks</strong>: Container health monitoring ensures Jenkins is running correctly.</li>
+                <li><strong>Log Rotation</strong>: Log files are rotated to prevent disk space issues and maintain security.</li>
+            </ul>
+        </div>
+
+        <h3>Best Practices</h3>
+        <ul>
+            <li><strong>Use the setup script</strong>: <code>setup-jenkins.sh</code> automatically generates secure passwords using <code>openssl rand -base64 32</code></li>
+            <li><strong>Rotate passwords regularly</strong>: Regenerate secret files and restart Jenkins periodically</li>
+            <li><strong>Never commit secrets</strong>: The <code>secrets/</code> directory and <code>.env</code> file are git-ignored</li>
+            <li><strong>Review permissions</strong>: Regularly review user permissions in <code>jenkins.yaml</code></li>
+            <li><strong>Keep updated</strong>: Regularly update Jenkins and plugins to patch security vulnerabilities</li>
+            <li><strong>Production considerations</strong>: For production, consider using Docker-in-Docker containers or a separate Docker daemon instead of mounting the host socket</li>
+        </ul>
+
+        <h3>Docker Socket Permissions</h3>
+        <div class="card">
+            <p>The Docker socket should be owned by <code>root:docker</code> with permissions <code>srw-rw----</code> (typically mode <code>0660</code>). Check with:</p>
+            <pre><code>ls -l $DOCKER_SOCK_PATH</code></pre>
+            <p>Or check your <code>.env</code> file for the detected path.</p>
+        </div>
+    </section>
+
+    <!-- Contributing & Support -->
+    <section id="support">
+        <h2>Contributing & Support</h2>
+
+        <h3>License</h3>
+        <div class="card">
+            <p>This project is licensed under the <strong>MIT License</strong>.</p>
+            <p>See the <a href="../LICENSE">LICENSE</a> file for details.</p>
+            <p>Copyright (c) 2025 Tal Orlik</p>
+        </div>
+
+        <h3>Troubleshooting</h3>
+        <p>Common issues and solutions:</p>
+        <ul>
+            <li><strong>Jenkins won't start</strong>: Check logs with <code>docker compose logs jenkins</code>, verify Docker socket permissions, ensure ports 8080 and 50000 are not in use</li>
+            <li><strong>Configuration not applied</strong>: Check JCasC logs in Jenkins (<strong>Manage Jenkins</strong> → <strong>System Log</strong> → <strong>Configuration as Code</strong>), verify <code>jenkins.yaml</code> syntax</li>
+            <li><strong>Docker socket permission denied</strong>: Verify socket ownership and permissions, check Docker group GID matches (999)</li>
+            <li><strong>Multi-arch build issues</strong>: Ensure Docker Buildx is installed, create a new builder with <code>docker buildx create --name multiarch --use</code></li>
+        </ul>
+        <p>For detailed troubleshooting information, see the <a href="../README.md#troubleshooting">Troubleshooting section</a> in the README.</p>
+
+        <h3>Tests</h3>
+        <div class="card">
+            <p>This repository includes comprehensive unit tests for the Jenkins configuration, covering:</p>
+            <ul>
+                <li>User authentication (admin and regular users)</li>
+                <li>Admin permissions (Overall/Administer)</li>
+                <li>User permissions (Job/Read, Job/Build, Job/Cancel, Job/Workspace, View/Read)</li>
+                <li>Container health checks</li>
+            </ul>
+            <p>For detailed information about running and maintaining the tests, see <a href="../TEST_README.md">TEST_README.md</a>.</p>
+        </div>
+
+        <h3>Repository</h3>
+        <div class="card">
+            <p>GitHub Repository: <a href="https://github.com/talorlik/docker-compose-and-jenkins-casc" target="_blank">docker-compose-and-jenkins-casc</a></p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Tal Orlik. Licensed under MIT License.</p>
+        <p>Jenkins with Docker Compose and Configuration as Code</p>
+    </footer>
+
+    <script>
+        // Theme management
+        const themeStylesheet = document.getElementById('theme-stylesheet');
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+
+        // Get saved theme or default to light
+        const currentTheme = localStorage.getItem('theme') || 'light';
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                themeStylesheet.href = 'dark-theme.css';
+                // Show sun icon (to switch to light theme)
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                themeToggle.setAttribute('aria-label', 'Switch to light theme');
+                themeToggle.setAttribute('title', 'Switch to light theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeStylesheet.href = 'light-theme.css';
+                // Show moon icon (to switch to dark theme)
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                themeToggle.setAttribute('aria-label', 'Switch to dark theme');
+                themeToggle.setAttribute('title', 'Switch to dark theme');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Initialize theme on page load
+        setTheme(currentTheme);
+
+        // Toggle theme on button click
+        themeToggle.addEventListener('click', () => {
+            const newTheme = themeStylesheet.href.includes('dark-theme.css') ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const navMenu = document.getElementById('navMenu');
+
+        mobileMenuToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking on a link
+        const navLinks = document.querySelectorAll('.nav-menu a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+            });
+        });
+
+        // Active section highlighting
+        const sections = document.querySelectorAll('section[id]');
+        const navLinksArray = Array.from(navLinks);
+
+        function highlightActiveSection() {
+            const scrollY = window.pageYOffset;
+
+            sections.forEach(section => {
+                const sectionHeight = section.offsetHeight;
+                const sectionTop = section.offsetTop - 150;
+                const sectionId = section.getAttribute('id');
+
+                if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                    navLinksArray.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${sectionId}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }
+
+        window.addEventListener('scroll', highlightActiveSection);
+        window.addEventListener('load', highlightActiveSection);
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
