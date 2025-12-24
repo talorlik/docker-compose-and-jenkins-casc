@@ -338,7 +338,7 @@ table tbody tr:hover {
     padding: 25px;
 }
 
-.deployment-card h3 {
+.deployment-card h4 {
     margin-top: 0;
     color: var(--primary-color);
 }

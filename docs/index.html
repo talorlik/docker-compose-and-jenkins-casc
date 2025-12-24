@@ -113,7 +113,7 @@
         <h3>Manual Setup</h3>
         <div class="deployment-options">
             <div class="deployment-card">
-                <h3>Step 1: Create Secrets</h3>
+                <h4>Step 1: Create Secrets</h4>
                 <p>Create the secrets directory and generate secure passwords:</p>
                 <pre><code>mkdir -p secrets
 chmod 700 secrets
@@ -123,7 +123,7 @@ chmod 600 secrets/jenkins_admin_password secrets/jenkins_devops_password</code><
             </div>
 
             <div class="deployment-card">
-                <h3>Step 2: Create .env File</h3>
+                <h4>Step 2: Create .env File</h4>
                 <p><strong>Recommended</strong>: Use <code>setup-jenkins.sh</code> which automatically detects the Docker socket path.</p>
                 <p>Alternatively, create a <code>.env</code> file manually:</p>
                 <pre><code>JENKINS_URL=http://localhost:8080/
@@ -133,7 +133,7 @@ DOCKER_SOCK_PATH=/var/run/docker.sock</code></pre>
             </div>
 
             <div class="deployment-card">
-                <h3>Step 3: Build and Start</h3>
+                <h4>Step 3: Build and Start</h4>
                 <p>For single architecture (your current platform):</p>
                 <pre><code>docker compose up -d --build</code></pre>
                 <p>For multi-architecture support (ARM64 and AMD64):</p>
