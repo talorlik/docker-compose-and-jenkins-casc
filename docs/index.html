@@ -49,41 +49,47 @@
         </div>
 
         <h3>Features</h3>
-        <ul>
-            <li><strong>Jenkins running in Docker</strong> - Containerized Jenkins server with persistent storage</li>
-            <li><strong>Configuration as Code (JCasC)</strong> - Automated setup with declarative configuration</li>
-            <li><strong>Pre-installed plugins</strong>:
-                <ul>
-                    <li>Blue Ocean</li>
-                    <li>Docker Pipeline</li>
-                    <li>Configuration as Code</li>
-                    <li>Docker Plugin</li>
-                    <li>Workflow Aggregator</li>
-                    <li>Matrix Authorization Strategy</li>
-                </ul>
-            </li>
-            <li><strong>Multi-architecture support</strong> - ARM64 and AMD64 platforms</li>
-            <li><strong>Pre-configured users</strong> - Admin and devops users with role-based permissions</li>
-            <li><strong>Secrets-based password management</strong> - Secure password handling via Docker Compose secrets</li>
-            <li><strong>Automated setup script</strong> - Streamlined setup with <code>setup-jenkins.sh</code></li>
-            <li><strong>Docker-in-Docker support</strong> - Build Docker images from Jenkins pipelines</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong>Jenkins running in Docker</strong> - Containerized Jenkins server with persistent storage</li>
+                <li><strong>Configuration as Code (JCasC)</strong> - Automated setup with declarative configuration</li>
+                <li><strong>Pre-installed plugins</strong>:
+                    <ul>
+                        <li>Blue Ocean</li>
+                        <li>Docker Pipeline</li>
+                        <li>Configuration as Code</li>
+                        <li>Docker Plugin</li>
+                        <li>Workflow Aggregator</li>
+                        <li>Matrix Authorization Strategy</li>
+                    </ul>
+                </li>
+                <li><strong>Multi-architecture support</strong> - ARM64 and AMD64 platforms</li>
+                <li><strong>Pre-configured users</strong> - Admin and devops users with role-based permissions</li>
+                <li><strong>Secrets-based password management</strong> - Secure password handling via Docker Compose secrets</li>
+                <li><strong>Automated setup script</strong> - Streamlined setup with <code>setup-jenkins.sh</code></li>
+                <li><strong>Docker-in-Docker support</strong> - Build Docker images from Jenkins pipelines</li>
+            </ul>
+        </div>
 
         <h3>Prerequisites</h3>
-        <ul>
-            <li><strong>Docker Engine</strong> 20.10 or later</li>
-            <li><strong>Docker Compose</strong> 2.0 or later</li>
-            <li><strong>Docker Buildx</strong> (included with Docker Desktop) - For multi-arch builds</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong>Docker Engine</strong> 20.10 or later</li>
+                <li><strong>Docker Compose</strong> 2.0 or later</li>
+                <li><strong>Docker Buildx</strong> (included with Docker Desktop) - For multi-arch builds</li>
+            </ul>
+        </div>
 
         <h3>Core Components</h3>
-        <ul>
-            <li><strong>Jenkins</strong> - Latest LTS with JDK 21</li>
-            <li><strong>Docker Compose</strong> - Container orchestration</li>
-            <li><strong>Jenkins Configuration as Code (JCasC)</strong> - Declarative configuration management</li>
-            <li><strong>Docker Cloud</strong> - Dynamic agent provisioning</li>
-            <li><strong>Docker-in-Docker</strong> - Docker socket mounting for pipeline builds</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong>Jenkins</strong> - Latest LTS with JDK 21</li>
+                <li><strong>Docker Compose</strong> - Container orchestration</li>
+                <li><strong>Jenkins Configuration as Code (JCasC)</strong> - Declarative configuration management</li>
+                <li><strong>Docker Cloud</strong> - Dynamic agent provisioning</li>
+                <li><strong>Docker-in-Docker</strong> - Docker socket mounting for pipeline builds</li>
+            </ul>
+        </div>
     </section>
 
     <!-- Getting Started -->
@@ -293,26 +299,30 @@ docker compose restart jenkins</code></pre>
         </div>
 
         <h3>Docker-in-Docker</h3>
-        <div class="card">
+        <div id="docker-in-docker" class="card">
             <p>This setup includes Docker-in-Docker support, allowing Jenkins pipelines to build Docker images. The Docker socket is mounted from the host, enabling Jenkins to use the host's Docker daemon.</p>
             <p><strong>Note</strong>: The Jenkins container runs as the <code>jenkins</code> user (non-root) with docker group membership for secure Docker socket access. For production environments, consider using Docker-in-Docker containers or a separate Docker daemon.</p>
         </div>
 
         <h3>Volumes</h3>
-        <ul>
-            <li><strong><code>jenkins_home</code></strong>: Persistent storage for Jenkins data, configurations, and build history</li>
-            <li><strong><code>jenkins.yaml</code></strong>: Mounted as read-only configuration file for JCasC</li>
-            <li><strong>Docker Socket</strong>: Mounted from host for Docker-in-Docker support</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong><code>jenkins_home</code></strong>: Persistent storage for Jenkins data, configurations, and build history</li>
+                <li><strong><code>jenkins.yaml</code></strong>: Mounted as read-only configuration file for JCasC</li>
+                <li><strong>Docker Socket</strong>: Mounted from host for Docker-in-Docker support</li>
+            </ul>
+        </div>
 
         <h3>Ports</h3>
-        <ul>
-            <li><strong>8080</strong>: Jenkins web interface</li>
-            <li><strong>50000</strong>: Jenkins agent communication port</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong>8080</strong>: Jenkins web interface</li>
+                <li><strong>50000</strong>: Jenkins agent communication port</li>
+            </ul>
+        </div>
 
         <h3>Networks</h3>
-        <div class="card">
+        <div id="networks" class="card">
             <p>Jenkins runs on a custom Docker network (<code>jenkins-network</code>) for service isolation. This allows for future expansion with additional services (databases, reverse proxies, etc.) that can communicate using service names as hostnames.</p>
         </div>
     </section>
@@ -399,20 +409,22 @@ cat secrets/jenkins_devops_password</code></pre>
         </div>
 
         <h3>Verification</h3>
-        <ul>
-            <li>Blue Ocean should be accessible at: <code>http://localhost:8080/blue</code></li>
-            <li>Docker Pipeline plugin should be available in pipeline configurations</li>
-            <li>Configuration as Code plugin should show the applied configuration</li>
-            <li>Docker Cloud should be configured in: <strong>Manage Jenkins</strong> → <strong>Nodes and Clouds</strong> → <strong>Clouds</strong></li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li>Blue Ocean should be accessible at: <code>http://localhost:8080/blue</code></li>
+                <li>Docker Pipeline plugin should be available in pipeline configurations</li>
+                <li>Configuration as Code plugin should show the applied configuration</li>
+                <li>Docker Cloud should be configured in: <strong>Manage Jenkins</strong> → <strong>Nodes and Clouds</strong> → <strong>Clouds</strong></li>
+            </ul>
+        </div>
     </section>
 
     <!-- Security Considerations -->
     <section id="security">
         <h2>Security Considerations</h2>
 
+        <h3>Key Security Features</h3>
         <div class="card">
-            <h3>Key Security Features</h3>
             <ul>
                 <li><strong>Secrets Management</strong>: Passwords managed via Docker Compose secrets stored in the <code>secrets/</code> directory (git-ignored). Never commit plain-text passwords to version control.</li>
                 <li><strong>Non-Root User</strong>: Jenkins container runs as the <code>jenkins</code> user (non-root) with docker group membership for secure Docker socket access.</li>
@@ -424,14 +436,16 @@ cat secrets/jenkins_devops_password</code></pre>
         </div>
 
         <h3>Best Practices</h3>
-        <ul>
-            <li><strong>Use the setup script</strong>: <code>setup-jenkins.sh</code> automatically generates secure passwords using <code>openssl rand -base64 32</code></li>
-            <li><strong>Rotate passwords regularly</strong>: Regenerate secret files and restart Jenkins periodically</li>
-            <li><strong>Never commit secrets</strong>: The <code>secrets/</code> directory and <code>.env</code> file are git-ignored</li>
-            <li><strong>Review permissions</strong>: Regularly review user permissions in <code>jenkins.yaml</code></li>
-            <li><strong>Keep updated</strong>: Regularly update Jenkins and plugins to patch security vulnerabilities</li>
-            <li><strong>Production considerations</strong>: For production, consider using Docker-in-Docker containers or a separate Docker daemon instead of mounting the host socket</li>
-        </ul>
+        <div class="card">
+            <ul>
+                <li><strong>Use the setup script</strong>: <code>setup-jenkins.sh</code> automatically generates secure passwords using <code>openssl rand -base64 32</code></li>
+                <li><strong>Rotate passwords regularly</strong>: Regenerate secret files and restart Jenkins periodically</li>
+                <li><strong>Never commit secrets</strong>: The <code>secrets/</code> directory and <code>.env</code> file are git-ignored</li>
+                <li><strong>Review permissions</strong>: Regularly review user permissions in <code>jenkins.yaml</code></li>
+                <li><strong>Keep updated</strong>: Regularly update Jenkins and plugins to patch security vulnerabilities</li>
+                <li><strong>Production considerations</strong>: For production, consider using Docker-in-Docker containers or a separate Docker daemon instead of mounting the host socket</li>
+            </ul>
+        </div>
 
         <h3>Docker Socket Permissions</h3>
         <div class="card">
@@ -446,14 +460,16 @@ cat secrets/jenkins_devops_password</code></pre>
         <h2>Contributing & Support</h2>
 
         <h3>Troubleshooting</h3>
-        <p>Common issues and solutions:</p>
-        <ul>
-            <li><strong>Jenkins won't start</strong>: Check logs with <code>docker compose logs jenkins</code>, verify Docker socket permissions, ensure ports 8080 and 50000 are not in use</li>
-            <li><strong>Configuration not applied</strong>: Check JCasC logs in Jenkins (<strong>Manage Jenkins</strong> → <strong>System Log</strong> → <strong>Configuration as Code</strong>), verify <code>jenkins.yaml</code> syntax</li>
-            <li><strong>Docker socket permission denied</strong>: Verify socket ownership and permissions, check Docker group GID matches (999)</li>
-            <li><strong>Multi-arch build issues</strong>: Ensure Docker Buildx is installed, create a new builder with <code>docker buildx create --name multiarch --use</code></li>
-        </ul>
-        <p>For detailed troubleshooting information, see the <a href="../README.md#troubleshooting">Troubleshooting section</a> in the README.</p>
+        <div class="card">
+            <p>Common issues and solutions:</p>
+            <ul>
+                <li><strong>Jenkins won't start</strong>: Check logs with <code>docker compose logs jenkins</code>, verify Docker socket permissions, ensure ports 8080 and 50000 are not in use</li>
+                <li><strong>Configuration not applied</strong>: Check JCasC logs in Jenkins (<strong>Manage Jenkins</strong> → <strong>System Log</strong> → <strong>Configuration as Code</strong>), verify <code>jenkins.yaml</code> syntax</li>
+                <li><strong>Docker socket permission denied</strong>: Verify socket ownership and permissions, check Docker group GID matches (999)</li>
+                <li><strong>Multi-arch build issues</strong>: Ensure Docker Buildx is installed, create a new builder with <code>docker buildx create --name multiarch --use</code></li>
+            </ul>
+            <p>For detailed troubleshooting information, see the <a href="../README.md#troubleshooting">Troubleshooting section</a> in the README.</p>
+        </div>
 
         <h3>Tests</h3>
         <div class="card">

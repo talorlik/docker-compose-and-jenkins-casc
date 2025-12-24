@@ -251,12 +251,16 @@ p {
     margin-bottom: 15px;
 }
 
-#architecture p {
-    margin-top: 15px;
+#docker-in-docker p:first-child {
+    margin-top: 0;
 }
 
 p:last-child {
     margin-bottom: 0;
+}
+
+#networks p:last-child {
+    margin-top: 0;
 }
 
 .deployment-card p:last-child {
