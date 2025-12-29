@@ -259,11 +259,14 @@ p:last-child {
     margin-bottom: 0;
 }
 
-#networks p:last-child {
+#networks p:last-child,
+#support #repository p:last-child {
     margin-top: 0;
 }
 
-.deployment-card p:last-child {
+.deployment-card p:last-child,
+#configuration p:last-child,
+#support p:last-child {
     margin-top: 15px;
 }
 
