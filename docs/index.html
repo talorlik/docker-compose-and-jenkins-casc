@@ -597,5 +597,49 @@ cat secrets/jenkins_devops_password</code></pre>
             });
         });
     </script>
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTopButton" class="scroll-to-top" aria-label="Scroll to top" title="Scroll to top">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="16 12 12 8 8 12"></polyline>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+        </svg>
+    </button>
+    <script>
+        // Initialize scroll to top button after DOM is ready
+        function initScrollToTop() {
+            const scrollToTopButton = document.getElementById('scrollToTopButton');
+            if (!scrollToTopButton) {
+                console.error('Scroll to top button not found');
+                return;
+            }
+            // Check scroll position on load
+            function checkScroll() {
+                if (window.pageYOffset > 100 || document.documentElement.scrollTop > 100) {
+                    scrollToTopButton.classList.add('visible');
+                } else {
+                    scrollToTopButton.classList.remove('visible');
+                }
+            }
+            // Initial check
+            checkScroll();
+            // Handle scroll events
+            window.addEventListener('scroll', checkScroll);
+            // Handle click
+            scrollToTopButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initScrollToTop);
+        } else {
+            initScrollToTop();
+        }
+    </script>
 </body>
 </html>
